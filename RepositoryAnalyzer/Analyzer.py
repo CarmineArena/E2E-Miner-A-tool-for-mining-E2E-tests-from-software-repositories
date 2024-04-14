@@ -1,9 +1,11 @@
 import json
 import os
 import queue
+import shutil
 import threading
 import re
 import time
+import git
 from lxml import etree
 from abc import ABC, abstractmethod
 
@@ -66,6 +68,8 @@ class AnalyzerController(Analyzer, ABC):
                         print(repository + "è web tested")
 
             time.sleep(1)
+            repo = git.Repo(cloned_repository)
+            repo.git.execute(['git', 'rm', '-rf', cloned_repository])
             self.repositories_queue.task_done()
 
     def analyze_repositories(self):
@@ -85,11 +89,11 @@ class AnalyzerController(Analyzer, ABC):
 class WebDependencyListCreator:
     def __init__(self, repository):
         if (repository[1]) == 'Java':
-            self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\MiningRepositorySoftware\RepositoryAnalyzer\WebJavaDependency.txt"
+            self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\DataMiningRepositorySoftware\RepositoryAnalyzer\WebJavaDependency.txt"
         elif (repository[1]) == 'Python':
-            self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\MiningRepositorySoftware\RepositoryAnalyzer\WebPythonDependency.txt"
+            self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\DataMiningRepositorySoftware\RepositoryAnalyzer\WebPythonDependency.txt"
         elif (repository[1]) == 'JavaScript':
-            self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\MiningRepositorySoftware\RepositoryAnalyzer\WebJSDependency.txt"
+            self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\DataMiningRepositorySoftware\RepositoryAnalyzer\WebJSDependency.txt"
 
     def trasport_file_dependencies_in_list(self):
         list_web = []

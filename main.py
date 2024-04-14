@@ -2,7 +2,7 @@
 from RepositoryAnalyzer.Analyzer import AnalyzerController
 from Dataset.DataSet import DataSet
 
-dataset = DataSet('Dataset/results.json')
+# dataset = DataSet('Dataset/results.json')
 
 # tutte = dataset.read_all_repositories()
 
