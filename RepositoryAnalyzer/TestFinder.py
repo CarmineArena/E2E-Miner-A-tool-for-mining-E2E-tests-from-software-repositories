@@ -2,7 +2,7 @@ import os
 from abc import ABC
 
 from RepositoryAnalyzer.TestFinderInterface import TestDependencyFinderInterface
-
+'''
 
 class SeleniumFinder(TestDependencyFinderInterface, ABC):
 
@@ -65,3 +65,4 @@ class JMeterFinder(TestDependencyFinderInterface, ABC):
                     print("usa Jmeter")
                     return True
         return False
+'''

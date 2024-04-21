@@ -1,7 +1,10 @@
+import errno
 import json
 import os
 import queue
 import shutil
+import stat
+import subprocess
 import threading
 import re
 import time
@@ -9,13 +12,22 @@ import git
 from lxml import etree
 from abc import ABC, abstractmethod
 
+from Dataset.Repository import WebRepository, WebRepositoryDAO
 from RepositoryAnalyzer.AnalyzerInterface import Analyzer, DependencyFileFinderInterface, WebAnalyzerInterface
 from RepositoryAnalyzer.RepositoryCloner import Cloner
-from RepositoryAnalyzer.TestFinder import SeleniumFinder, PuppeteerFinder, PlayWrightFinder, CypressFinder, \
-    LocustFinder, JMeterFinder
+
 from RepositoryAnalyzer.TestFinderInterface import SeleniumDependencyFinderInterface, \
     PlayWrightDependencyFinderInterface, PuppeteerDependencyFinderInterface, CypressDependencyFinderInterface, \
     LocustDependencyFinderInterface, JMeterDependencyFinderInterface
+
+
+def handle_remove_readonly(func, path, exc):
+    excvalue = exc[1]
+    if func in (os.rmdir, os.remove, os.unlink) and excvalue.errno == errno.EACCES:
+        os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)  # 0777
+        func(path)
+    else:
+        raise
 
 
 class AnalyzerController(Analyzer, ABC):
@@ -41,38 +53,45 @@ class AnalyzerController(Analyzer, ABC):
                 if self.repositories_queue.empty():
                     break
                 repository_to_analyze = self.repositories_queue.get()
-            repository = str(repository_to_analyze[0]) if repository_to_analyze[0] else ''
 
-            print(repository)
+            print(repository_to_analyze.name)
 
-            print(f"analyzing {repository}...")
+            print(f"analyzing {repository_to_analyze.name}...")
 
-            # mettilo in un metodo
             cloner = Cloner(self.output_folder)
-            cloned_repository = cloner.clone_repository(repository)
+            cloned_repository = cloner.clone_repository(repository_to_analyze.name)
 
-            repository_analyzer = DependencyFileFinderInterface.factory_finder(repository_to_analyze[1])
+            repository_analyzer = DependencyFileFinderInterface.factory_finder(repository_to_analyze.main_language)
             dependencies = repository_analyzer.find_dependency_file(cloned_repository)
-
-            # interfaccia di analisi di una repository -> quindi fare metodi per cercare file delle dipendenze e altro
-
-            # fai interfaccia + factory method
 
             # if WebAnalyzer.is_web_repository(repository_to_analyze, dependencies):
             web_list = WebDependencyListCreator(repository_to_analyze).trasport_file_dependencies_in_list()
             if WebAnalyzer().has_web_dependencies(web_list, dependencies):
-                print(repository + "è web")
+                print(repository_to_analyze.name + "è web")
+                webrepository = WebRepository(repository_to_analyze.ID, repository_to_analyze.name)
                 for dependency in self.test_dependency:
                     if dependency.factory_test_dependency(repository_to_analyze).find_test_dependency_in_repository(
-                            repository, dependencies):
-                        print(repository + "è web tested")
-
-            time.sleep(1)
-            repo = git.Repo(cloned_repository)
-            repo.git.execute(['git', 'rm', '-rf', cloned_repository])
-            self.repositories_queue.task_done()
+                            cloned_repository, dependencies, webrepository):
+                        print(repository_to_analyze.name + "è web tested")
+                print(webrepository.name + " oggetto creato correttamente")
+                with self.lock:
+                    WebRepositoryDAO(webrepository).add_web_repository_to_db()
+            else:
+                shutil.rmtree(cloned_repository, ignore_errors=False, onerror=handle_remove_readonly)
+                self.repositories_queue.task_done()
+                # repo = git.Repo(cloned_repository)
+                # repo.git.execute(['git', 'rm', '-rf', cloned_repository])
+                # time.sleep(5)
+                # shutil.rmtree(cloned_repository)
 
     def analyze_repositories(self):
+
+        # Definisci il comando da eseguire per disattivare core.protectNTFS
+        command = ["git", "config", "--global", "core.protectNTFS", "false"]
+
+        # Esegui il comando
+        subprocess.run(command)
+
         threads = []
         for i in range(self.max_threads):
             print("sto creando il thread numero " + str(i))
@@ -88,11 +107,11 @@ class AnalyzerController(Analyzer, ABC):
 
 class WebDependencyListCreator:
     def __init__(self, repository):
-        if (repository[1]) == 'Java':
+        if repository.main_language == 'Java':
             self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\DataMiningRepositorySoftware\RepositoryAnalyzer\WebJavaDependency.txt"
-        elif (repository[1]) == 'Python':
+        elif repository.main_language == 'Python':
             self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\DataMiningRepositorySoftware\RepositoryAnalyzer\WebPythonDependency.txt"
-        elif (repository[1]) == 'JavaScript':
+        elif repository.main_language == 'JavaScript':
             self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\DataMiningRepositorySoftware\RepositoryAnalyzer\WebJSDependency.txt"
 
     def trasport_file_dependencies_in_list(self):
@@ -135,7 +154,7 @@ class DependencyFinderInterface(ABC):
         elif 'requirements' in dependency_file:
             return PythonDependencyFinder()
         elif 'package.json' in dependency_file or 'package-lock.json' in dependency_file:
-            return  JavaScriptDependencyFinder()
+            return JavaScriptDependencyFinder()
 
 
 class JavaScriptDependencyFileFinder(DependencyFileFinderInterface, ABC):
@@ -221,6 +240,7 @@ class JavaScriptDependencyFinder(DependencyFinderInterface, ABC):
                         # Aggiungi il nome del pacchetto alla lista delle dipendenze
                         self.add_dependency_in_list((match.group(1), version), dependency_list)
 
+        print(dependency_list)
         return dependency_list
 
 

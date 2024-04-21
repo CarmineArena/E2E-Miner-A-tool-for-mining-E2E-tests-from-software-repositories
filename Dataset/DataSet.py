@@ -1,29 +1,24 @@
 import json
 from abc import ABC
+import sys
 
+sys.path.append("Dataset")
+print(sys.path)
 from Dataset.DataSetInterface import DataSetInterface
+from Dataset.Repository import Repository
+from DBconnector import Session, engine
 
 
 class DataSet(DataSetInterface, ABC):
-    def __init__(self, file_path):
-        self.file_path = file_path
 
     def read_all_repositories(self):
-        items_list = []
-        try:
-            with open(self.file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-
-        except FileNotFoundError:
-            raise FileNotFoundError("you inserted a non-existent file in the DataSet object")
-
-        for item in data['items']:
-            items_list.append(item)
-
-        # Ritorno la lista contenente gli items
+        local_session = Session(bind=engine)
+        items_list = local_session.query(Repository).all()
+        for repository in items_list:
+            print(repository.name)
+        print(len(items_list))
         return items_list
 
     def filter_repositories(self, filter_strategy):
-        repositories = self.read_all_repositories()
-        return filter_strategy.filtering(repositories)
-
+        # repositories = self.read_all_repositories()
+        return filter_strategy.filtering()
