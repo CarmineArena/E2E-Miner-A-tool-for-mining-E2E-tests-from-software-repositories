@@ -66,7 +66,7 @@ class Filter:
                  size=0, created_at="", pushed_at="", updated_at="",
                  homepage="", main_language=None, total_issues=0, open_issues=0, total_pull_requests=0,
                  open_pull_requests=0, last_commit="", last_commit_sha="", has_wiki=False,
-                 is_archived=False, languages=None, labels=None):
+                 is_archived=False, languages=None, labels=None, is_processed=False):
         if main_language is None:
             main_language = []
         if labels is None:
@@ -101,19 +101,29 @@ class Filter:
         self.__is_archived = is_archived
         self.__languages = languages
         self.__labels = labels
+        self.__is_processed = is_processed
 
     def filtering(self):
-        count = 0
         local_session = Session(bind=engine)
+        filtered_repositories = []
         repositories = local_session.query(Repository).filter(Repository.is_fork == self.__is_fork,
                                                               Repository.commits >= self.__commits,
-                                                              Repository.main_language.in_(self.__main_language),
+                                                              # Repository.main_language.in_(self.__main_language),
                                                               Repository.stargazers >= self.__stargazers,
-                                                              Repository.contributors >= self.__contributors).all()
+                                                              Repository.contributors >= self.__contributors,
+                                                              Repository.is_processed == self.__is_processed).all()
+        print("la lista è lunga " + str(len(repositories)))
         for repository in repositories:
-            count +=1
-            print("l'id è " + str(repository.ID) + "il nome è" + repository.name + " scritto in " + repository.main_language)
-        print(len(repositories))
-        print(count)
-        return repositories
+            repository.convert_string_language_in_list()
+            print(repository.name)
+            print(repository.languages)
+            print(repository.main_language)
 
+            for language in self.__languages:
+                if language in repository.languages or language == repository.main_language:
+                    filtered_repositories.append(repository)
+                    print("l'id è " + str(repository.ID) + " il nome è " + repository.name)
+                    break
+
+            print(len(filtered_repositories))
+        return filtered_repositories

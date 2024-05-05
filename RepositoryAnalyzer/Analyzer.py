@@ -11,14 +11,18 @@ import time
 import git
 from lxml import etree
 from abc import ABC, abstractmethod
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.INFO)
 
 from Dataset.Repository import WebRepository, WebRepositoryDAO
 from RepositoryAnalyzer.AnalyzerInterface import Analyzer, DependencyFileFinderInterface, WebAnalyzerInterface
 from RepositoryAnalyzer.RepositoryCloner import Cloner
 
-from RepositoryAnalyzer.TestFinderInterface import SeleniumDependencyFinderInterface, \
-    PlayWrightDependencyFinderInterface, PuppeteerDependencyFinderInterface, CypressDependencyFinderInterface, \
-    LocustDependencyFinderInterface, JMeterDependencyFinderInterface
+from RepositoryAnalyzer.TestFinderInterface import SeleniumTestDependencyFinder, \
+    PlayWrightTestDependencyFinder, PuppeteerTestDependencyFinder, CypressTestDependencyFinder, \
+    LocustTestDependencyFinder, JMeterTestDependencyFinder
 
 
 def handle_remove_readonly(func, path, exc):
@@ -31,20 +35,24 @@ def handle_remove_readonly(func, path, exc):
 
 
 class AnalyzerController(Analyzer, ABC):
-    def __init__(self, repository, max_threads=10, output_folder=r"C:\rep"):
+    def __init__(self, repository, max_threads=10, output_folder=r"C:\re"):
         self.repository = repository
         self.max_threads = max_threads
         self.output_folder = output_folder
         self.repositories_queue = self.create_repositories_queue(repository)
         self.lock = threading.Lock()
-        self.test_dependency = [SeleniumDependencyFinderInterface(), PlayWrightDependencyFinderInterface(),
-                                PuppeteerDependencyFinderInterface(), CypressDependencyFinderInterface(),
-                                LocustDependencyFinderInterface(), JMeterDependencyFinderInterface()]
+        self.language_to_analyze = ["Java", "Python", "JavaScript"]
+        self.test_dependency = [SeleniumTestDependencyFinder(), PlayWrightTestDependencyFinder(),
+                                PuppeteerTestDependencyFinder(), CypressTestDependencyFinder(),
+                                LocustTestDependencyFinder(), JMeterTestDependencyFinder()]
 
     def create_repositories_queue(self, repositories):
         q = queue.Queue()
+        c = 0
         for item in repositories:
             q.put(item)
+            c += 1
+        print("coda lunga " + str(c))
         return q
 
     def analyze_all_repository(self):
@@ -53,6 +61,7 @@ class AnalyzerController(Analyzer, ABC):
                 if self.repositories_queue.empty():
                     break
                 repository_to_analyze = self.repositories_queue.get()
+                logging.info("ho preso dalla coda " + repository_to_analyze.name)
 
             print(repository_to_analyze.name)
 
@@ -60,15 +69,44 @@ class AnalyzerController(Analyzer, ABC):
 
             cloner = Cloner(self.output_folder)
             cloned_repository = cloner.clone_repository(repository_to_analyze.name)
+            dependencies = []
+            for language in self.language_to_analyze:
+                repository_analyzer = DependencyFileFinderInterface.factory_finder(language)
+                dependencies = repository_analyzer.find_dependency_file(cloned_repository, dependencies)
+                print("dipendenze per " + repository_to_analyze.name)
+                print(dependencies)
 
-            repository_analyzer = DependencyFileFinderInterface.factory_finder(repository_to_analyze.main_language)
-            dependencies = repository_analyzer.find_dependency_file(cloned_repository)
+            webrepository = WebRepository(repository_to_analyze.ID, repository_to_analyze.name)
 
             # if WebAnalyzer.is_web_repository(repository_to_analyze, dependencies):
-            web_list = WebDependencyListCreator(repository_to_analyze).trasport_file_dependencies_in_list()
+            for language in self.language_to_analyze:
+                web_list = WebDependencyListCreator(language).trasport_file_dependencies_in_list()
+                if WebAnalyzer().has_web_dependencies(web_list, dependencies):
+                    WebFlags().change_flag(language, webrepository)
+
+            if WebFlags().check_flag(webrepository):
+                print(repository_to_analyze.name + "è web")
+
+                for dependency in self.test_dependency:
+                    if dependency.find_test_dependency(dependencies, repository_to_analyze, webrepository,
+                                                       cloned_repository):
+                        print("trovata una dipendenza test")
+
+                with self.lock:
+                    WebRepositoryDAO(webrepository).add_web_repository_to_db()
+
+            else:
+                shutil.rmtree(cloned_repository, ignore_errors=False, onerror=handle_remove_readonly)
+
+            with self.lock:
+                repository_to_analyze.update_processed_repository()
+
+            self.repositories_queue.task_done()
+
+    '''
             if WebAnalyzer().has_web_dependencies(web_list, dependencies):
                 print(repository_to_analyze.name + "è web")
-                webrepository = WebRepository(repository_to_analyze.ID, repository_to_analyze.name)
+
                 for dependency in self.test_dependency:
                     if dependency.factory_test_dependency(repository_to_analyze).find_test_dependency_in_repository(
                             cloned_repository, dependencies, webrepository):
@@ -83,6 +121,7 @@ class AnalyzerController(Analyzer, ABC):
                 # repo.git.execute(['git', 'rm', '-rf', cloned_repository])
                 # time.sleep(5)
                 # shutil.rmtree(cloned_repository)
+    '''
 
     def analyze_repositories(self):
 
@@ -106,12 +145,12 @@ class AnalyzerController(Analyzer, ABC):
 
 
 class WebDependencyListCreator:
-    def __init__(self, repository):
-        if repository.main_language == 'Java':
+    def __init__(self, language):
+        if language == 'Java':
             self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\DataMiningRepositorySoftware\RepositoryAnalyzer\WebJavaDependency.txt"
-        elif repository.main_language == 'Python':
+        elif language == 'Python':
             self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\DataMiningRepositorySoftware\RepositoryAnalyzer\WebPythonDependency.txt"
-        elif repository.main_language == 'JavaScript':
+        elif language == 'JavaScript':
             self.txt_file_with_dependencies = r"C:\Users\carmi\PycharmProjects\DataMiningRepositorySoftware\RepositoryAnalyzer\WebJSDependency.txt"
 
     def trasport_file_dependencies_in_list(self):
@@ -126,6 +165,21 @@ class WebDependencyListCreator:
 
         print(list_web)
         return list_web
+
+
+class WebFlags:
+    def change_flag(self, language, webrepository):
+        if language == 'Java':
+            webrepository.set_is_web_java(True)
+        if language == 'Python':
+            webrepository.set_is_web_python(True)
+        if language == 'JavaScript':
+            webrepository.set_is_web_javascript(True)
+
+    def check_flag(self, webrepository):
+        if webrepository.is_web_java or webrepository.is_web_python or webrepository.is_web_javascript:
+            return True
+        return False
 
 
 class WebAnalyzer:
@@ -143,9 +197,10 @@ class DependencyFinderInterface(ABC):
     def find_dependency(self, dependency_file, dependency_list):
         pass
 
-    @abstractmethod
-    def add_dependency_in_list(self, dependency, dependency_list):
-        pass
+    @staticmethod
+    def add_dependency_in_list(dependency, dependency_list):
+        if dependency not in dependency_list:
+            dependency_list.append(dependency)
 
     @staticmethod
     def factory_analyzer(dependency_file):
@@ -158,8 +213,7 @@ class DependencyFinderInterface(ABC):
 
 
 class JavaScriptDependencyFileFinder(DependencyFileFinderInterface, ABC):
-    def find_dependency_file(self, repository):
-        dependencies = []
+    def find_dependency_file(self, repository, dependencies):
         print("vedo questo ->" + str(repository))
         for root, dirs, files in os.walk(repository):
             if 'package.json' in files:
@@ -174,8 +228,7 @@ class JavaScriptDependencyFileFinder(DependencyFileFinderInterface, ABC):
 
 
 class PythonDependencyFileFinder(DependencyFileFinderInterface, ABC):
-    def find_dependency_file(self, repository):
-        dependencies = []
+    def find_dependency_file(self, repository, dependencies):
         print("vedo questo ->" + str(repository))
         for root, dirs, files in os.walk(repository):
             for file in files:
@@ -192,8 +245,7 @@ class PythonDependencyFileFinder(DependencyFileFinderInterface, ABC):
 
 class JavaDependencyFileFinder(DependencyFileFinderInterface, ABC):
 
-    def find_dependency_file(self, repository):
-        dependencies = []
+    def find_dependency_file(self, repository, dependencies):
         print("vedo questo ->" + str(repository))
         for root, dirs, files in os.walk(repository):
             if 'build.gradle' in files:
@@ -212,13 +264,18 @@ class JavaDependencyFileFinder(DependencyFileFinderInterface, ABC):
 
 
 class JavaScriptDependencyFinder(DependencyFinderInterface, ABC):
-    def add_dependency_in_list(self, dependency, dependency_list):
-        if dependency not in dependency_list:
-            dependency_list.append(dependency)
 
     def find_dependency(self, dependency_file, dependency_list):
-        with open(dependency_file, 'r') as file:
-            data = json.load(file)
+        if 'package.json' in dependency_file:
+            return self.analyze_package_file(dependency_file, dependency_list)
+        elif 'package-lock.json' in dependency_file:
+            return self.analyze_packagelock_file(dependency_file, dependency_list)
+
+    def analyze_package_file(self, dependency_file, dependency_list):
+        try:
+            with open(dependency_file, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+
             # Definisci il pattern regex per estrarre il nome del pacchetto
             pattern = r'^@?([^/]+)'
 
@@ -239,16 +296,73 @@ class JavaScriptDependencyFinder(DependencyFinderInterface, ABC):
                     if match:
                         # Aggiungi il nome del pacchetto alla lista delle dipendenze
                         self.add_dependency_in_list((match.group(1), version), dependency_list)
+        except json.JSONDecodeError as e:
+            print("file malformato-> ")
+            print(e)
+            return dependency_list
 
+        print(dependency_list)
+        print("ho analizzato " + str(dependency_file))
+        return dependency_list
+
+    def analyze_packagelock_file(self, dependency_file, dependency_list):
+        try:
+            with open(dependency_file, 'r', encoding='utf-8') as file:
+                lockfile = json.load(file)
+        except json.JSONDecodeError as e:
+            print("file malformato-> ")
+            print(e)
+            return dependency_list
+
+        def process_dependencies(dependencies):
+            for package_name, package_details in dependencies.items():
+                version = package_details.get('version', 'version not found')
+                self.add_dependency_in_list((self.get_package_name(package_name), version), dependency_list)
+                if 'dependencies' in package_details:
+                    process_dependencies(package_details['dependencies'])
+
+        if 'dependencies' in lockfile:
+            process_dependencies(lockfile['dependencies'])
+
+        if 'devDependencies' in lockfile:
+            process_dependencies(lockfile['devDependencies'])
         print(dependency_list)
         return dependency_list
 
+    def get_package_name(self, full_name):
+        # Rimuove il carattere '@' e prende solo la parte del nome del pacchetto prima del carattere '/'
+        return full_name.lstrip('@').split('/')[0]
+
+'''
+with open(dependency_file, 'r') as file:
+    data = json.load(file)
+    # Definisci il pattern regex per estrarre il nome del pacchetto
+    pattern = r'^@?([^/]+)'
+
+    # Controlla se il file contiene una sezione "dependencies"
+    if 'dependencies' in data:
+        for dependency, version in data['dependencies'].items():
+            # Cerca il pattern nella dipendenza
+            match = re.match(pattern, dependency)
+            if match:
+                # Aggiungi il nome del pacchetto alla lista delle dipendenze
+                self.add_dependency_in_list((match.group(1), version), dependency_list)
+
+    # Controlla se il file contiene una sezione "devDependencies" (dipendenze di sviluppo)
+    if 'devDependencies' in data:
+        for dependency, version in data['devDependencies'].items():
+            # Cerca il pattern nella dipendenza
+            match = re.match(pattern, dependency)
+            if match:
+                # Aggiungi il nome del pacchetto alla lista delle dipendenze
+                self.add_dependency_in_list((match.group(1), version), dependency_list)
+
+print(dependency_list)
+return dependency_list
+'''
+
 
 class PythonDependencyFinder(DependencyFinderInterface, ABC):
-
-    def add_dependency_in_list(self, dependency, dependency_list):
-        if dependency not in dependency_list:
-            dependency_list.append(dependency)
 
     def find_dependency(self, dependency_file, dependency_list):
         print("reading... " + dependency_file)
@@ -258,11 +372,11 @@ class PythonDependencyFinder(DependencyFinderInterface, ABC):
                 line = line.strip()
                 if line and not line.startswith('#'):  # Ignora commenti e linee vuote
                     if '==' in line:
-                        dependency, version = line.split('==')
+                        dependency, version = line.split('==', 1)
                     elif '>=' in line:
-                        dependency, version = line.split('>=')
+                        dependency, version = line.split('>=', 1)
                     elif '<=' in line:
-                        dependency, version = line.split('<=')
+                        dependency, version = line.split('<=', 1)
                     else:
                         dependency = line
                         version = ''  # Assegna una stringa vuota alla versione
@@ -272,10 +386,6 @@ class PythonDependencyFinder(DependencyFinderInterface, ABC):
 
 class JavaDependencyFinder(DependencyFinderInterface, ABC):
 
-    def add_dependency_in_list(self, dependency, dependency_list):
-        if dependency not in dependency_list:
-            dependency_list.append(dependency)
-
     def find_dependency(self, dependency_file, dependency_list):
         if 'build.gradle' in dependency_file:
             return self.analyze_gradle_file(dependency_file, dependency_list)
@@ -283,7 +393,9 @@ class JavaDependencyFinder(DependencyFinderInterface, ABC):
             return self.analyze_pom_file(dependency_file, dependency_list)
 
     def analyze_gradle_file(self, gradle_file, dependency_list):
-        with open(gradle_file, 'r') as file:
+        print("vedo il file gradle di " + gradle_file)
+        logging.info("vedo il file gradle di " + gradle_file)
+        with open(gradle_file, 'r', encoding='utf-8') as file:
             # Cerca le dipendenze nel file Gradle
             gradle_content = file.read()
             pattern = re.compile(r"(['\"])(.*?):(.*?):(.*?)\1")
@@ -296,9 +408,11 @@ class JavaDependencyFinder(DependencyFinderInterface, ABC):
         return dependency_list
 
     def analyze_pom_file(self, pom_file, dependency_list):
+        '''
         parser = etree.XMLParser(recover=True)
         tree = etree.parse(pom_file, parser=parser)
         root = tree.getroot()
+        print("vedo il file pom di " + pom_file)
 
         if root is not None:
             # Trova tutte le dipendenze nel file pom.xml
@@ -314,5 +428,64 @@ class JavaDependencyFinder(DependencyFinderInterface, ABC):
                 version = version_element.text if version_element is not None else "Version non trovata"
                 # print("aggiunti" + group_id + artifact_id + version)
                 self.add_dependency_in_list((group_id, artifact_id, version), dependency_list)
+                
+        '''
+        '''
+        if root is not None:
+            # Trova tutte le dipendenze nel file pom.xml
+            for dependency in root.findall('.//{*/}dependency'):
+                # Trova gli elementi groupId, artifactId e version indipendentemente dal namespace
+                group_id_element = dependency.find('.//{*/}groupId')
+                artifact_id_element = dependency.find('.//{*/}artifactId')
+                version_element = dependency.find('.//{*/}version')
 
-        return dependency_list
+                # Estrai il testo dagli elementi se presenti
+                group_id = group_id_element.text.strip() if group_id_element is not None else "GroupId non trovato"
+                artifact_id = artifact_id_element.text.strip() if artifact_id_element is not None else "ArtifactId non trovato"
+                version = version_element.text.strip() if version_element is not None else "Version non trovata"
+
+                # Aggiungi la dipendenza alla lista
+                self.add_dependency_in_list((group_id, artifact_id, version), dependency_list)
+        '''
+        logging.info("sto analizzando " + pom_file)
+        print("vedo il file pom di " + pom_file)
+        '''
+        root = etree.parse(pom_file).getroot()
+        tree = etree.ElementTree(root)
+
+        depend = tree.xpath("//*[local-name()='dependency']")
+
+        for dep in depend:
+            infoDict = {}
+            for child in dep.getchildren():
+                tag = child.tag.split('}')[1]
+                text = child.text
+                infoDict[tag] = text
+
+            dependency_list.append((infoDict.get('groupId'), infoDict.get('artifactId'), infoDict.get('version')))
+        '''
+        from lxml import etree
+
+        try:
+            root = etree.parse(pom_file).getroot()
+            tree = etree.ElementTree(root)
+
+            depend = tree.xpath("//*[local-name()='dependency']")
+
+            for dep in depend:
+                infoDict = {}
+                for child in dep.getchildren():
+                    tag = child.tag
+                    if isinstance(tag, str) and '}' in tag:
+                        tag = tag.split('}')[1]
+                    text = child.text
+                    infoDict[tag] = text
+
+                dependency_list.append((infoDict.get('groupId'), infoDict.get('artifactId'), infoDict.get('version')))
+
+            return dependency_list
+
+        except Exception as e:
+            logging.warning("eccezione nel file " + pom_file + ": " + str(e))
+            print("eccezione nel file " + pom_file + ": " + str(e))
+            return dependency_list

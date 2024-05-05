@@ -15,6 +15,7 @@ for item in data['items']:
     languages = item["languages"]
     # Estrai solo i nomi dei linguaggi
     language_names = [language for language in languages.keys()]
+    metrics_str = json.dumps(item['metrics'])
 
     repository = Repository(
         item.get('name', ''),
@@ -41,6 +42,7 @@ for item in data['items']:
         item.get('blankLines', 0),
         item.get('codeLines', 0),
         item.get('commentLines', 0),
+        metrics_str,
         item.get('lastCommit', ''),
         item.get('lastCommitSHA', ''),
         item.get('hasWiki', False),

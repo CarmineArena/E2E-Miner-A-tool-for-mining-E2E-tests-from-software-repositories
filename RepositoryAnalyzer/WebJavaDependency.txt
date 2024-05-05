@@ -12,3 +12,5 @@ io.dropwizard
 com.vaadin
 org.apache.wicket
 com.bladejava
+jakarta.platform
+jakarta.servlet

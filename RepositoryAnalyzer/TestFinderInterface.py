@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-
+'''
 class TestDependencyFinderInterface(ABC):
 
     @abstractmethod
@@ -10,14 +10,14 @@ class TestDependencyFinderInterface(ABC):
 
 class SeleniumDependencyFinderInterface(TestDependencyFinderInterface):
 
-    def factory_test_dependency(self, repository):
-        if repository.main_language == 'Java':
+    def factory_test_dependency(self, language):
+        if language == 'Java':
             if self.check_implementation(SeleniumDependencyFinderInJava):
                 return SeleniumDependencyFinderInJava()
-        elif repository.main_language == 'Python':
+        elif language == 'Python':
             if self.check_implementation(SeleniumDependencyFinderInPython):
                 return SeleniumDependencyFinderInPython()
-        elif repository.main_language == 'JavaScript':
+        elif language == 'JavaScript':
             if self.check_implementation(SeleniumDependencyFinderInJavaScript):
                 return SeleniumDependencyFinderInJavaScript()
 
@@ -32,14 +32,14 @@ class SeleniumDependencyFinderInterface(TestDependencyFinderInterface):
 
 class PlayWrightDependencyFinderInterface(TestDependencyFinderInterface):
 
-    def factory_test_dependency(self, repository):
-        if repository.main_language == 'Java':
+    def factory_test_dependency(self, language):
+        if language == 'Java':
             if self.check_implementation(PlayWrightDependencyFinderInJava):
                 return PlayWrightDependencyFinderInJava()
-        elif repository.main_language == 'Python':
+        elif language == 'Python':
             if self.check_implementation(PlayWrightDependencyFinderInPython):
                 return PlayWrightDependencyFinderInPython()
-        elif repository.main_language == 'JavaScript':
+        elif language == 'JavaScript':
             if self.check_implementation(PlayWrightDependencyFinderInJavaScript):
                 return PlayWrightDependencyFinderInJavaScript()
 
@@ -54,14 +54,14 @@ class PlayWrightDependencyFinderInterface(TestDependencyFinderInterface):
 
 class PuppeteerDependencyFinderInterface(TestDependencyFinderInterface):
 
-    def factory_test_dependency(self, repository):
-        if repository.main_language == 'Java':
+    def factory_test_dependency(self, language):
+        if language == 'Java':
             if self.check_implementation(PuppeteerDependencyFinderInJava):
                 return PuppeteerDependencyFinderInJava()
-        elif repository.main_language == 'Python':
+        elif language == 'Python':
             if self.check_implementation(PuppeteerDependencyFinderInPython):
                 return PuppeteerDependencyFinderInPython()
-        elif repository.main_language == 'JavaScript':
+        elif language == 'JavaScript':
             if self.check_implementation(PuppeteerDependencyFinderInJavaScript):
                 return PuppeteerDependencyFinderInJavaScript()
 
@@ -75,14 +75,14 @@ class PuppeteerDependencyFinderInterface(TestDependencyFinderInterface):
 
 
 class CypressDependencyFinderInterface(TestDependencyFinderInterface):
-    def factory_test_dependency(self, repository):
-        if repository.main_language == 'Java':
+    def factory_test_dependency(self, language):
+        if language == 'Java':
             if self.check_implementation(CypressDependencyFinderInJava):
                 return CypressDependencyFinderInJava()
-        if repository.main_language == 'Python':
+        elif language == 'Python':
             if self.check_implementation(CypressDependencyFinderInPython):
                 return CypressDependencyFinderInPython()
-        if repository.main_language == 'JavaScript':
+        elif language == 'JavaScript':
             if self.check_implementation(CypressDependencyFinderInJavaScript):
                 return CypressDependencyFinderInJavaScript()
 
@@ -96,14 +96,14 @@ class CypressDependencyFinderInterface(TestDependencyFinderInterface):
 
 
 class LocustDependencyFinderInterface(TestDependencyFinderInterface):
-    def factory_test_dependency(self, repository):
-        if repository.main_language == 'Java':
+    def factory_test_dependency(self, language):
+        if language == 'Java':
             if self.check_implementation(LocustDependencyFinderInJava):
                 return LocustDependencyFinderInJava()
-        elif repository.main_language == 'Python':
+        elif language == 'Python':
             if self.check_implementation(LocustDependencyFinderInPython):
                 return LocustDependencyFinderInPython()
-        elif repository.main_language == 'JavaScript':
+        elif language == 'JavaScript':
             if self.check_implementation(LocustDependencyFinderInJavaScript):
                 return LocustDependencyFinderInJavaScript()
 
@@ -117,14 +117,14 @@ class LocustDependencyFinderInterface(TestDependencyFinderInterface):
 
 
 class JMeterDependencyFinderInterface(TestDependencyFinderInterface):
-    def factory_test_dependency(self, repository):
-        if repository.main_language == 'Java':
+    def factory_test_dependency(self, language):
+        if language == 'Java':
             if self.check_implementation(JMeterDependencyFinderInJava):
                 return JMeterDependencyFinderInJava()
-        elif repository.main_language == 'Python':
+        elif language == 'Python':
             if self.check_implementation(JMeterDependencyFinderInPython):
                 return JMeterDependencyFinderInPython()
-        elif repository.main_language == 'JavaScript':
+        elif language == 'JavaScript':
             if self.check_implementation(LocustDependencyFinderInJavaScript):
                 return JMeterDependencyFinderInJavaScript()
 
@@ -345,4 +345,210 @@ class SeleniumDependencyFinderInJavaScript(SeleniumDependencyFinderInterface):
                 webrepository.set_is_selenium_tested(True)
                 print("usa selenium")
                 return True
+        return False
+'''
+
+
+class TestDependencyFinderInterface(ABC):
+
+    @abstractmethod
+    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        pass
+
+
+class SeleniumTestDependencyFinder(TestDependencyFinderInterface, ABC):
+
+    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        if 'Java' in repository.languages:
+            return SeleniumTestDependencyFinderJava().find_dependency(dependencies, webrepository)
+        if 'Python' in repository.languages:
+            return SeleniumTestDependencyFinderPython().find_dependency(dependencies, webrepository)
+        if 'JavaScript' in repository.languages:
+            return SeleniumTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository)
+
+
+class SeleniumTestDependencyFinderJava:
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'org.seleniumhq.selenium':
+                webrepository.set_is_selenium_tested_java(True)
+                print("usa selenium")
+                return True
+        return False
+
+
+class SeleniumTestDependencyFinderPython:
+
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'selenium':
+                webrepository.set_is_selenium_tested_python(True)
+                print("usa selenium")
+                return True
+        return False
+
+
+class SeleniumTestDependencyFinderJavaScript:
+
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'selenium' or dependency[0] == 'selenium-webdriver':
+                webrepository.set_is_selenium_tested_javascript(True)
+                print("usa selenium")
+                return True
+        return False
+
+
+class PlayWrightTestDependencyFinder(TestDependencyFinderInterface, ABC):
+
+    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        if 'Java' in repository.languages:
+            return PlayWrightTestDependencyFinderJava().find_dependency(dependencies, webrepository)
+        if 'Python' in repository.languages:
+            return PlayWrightTestDependencyFinderPython().find_dependency(dependencies, webrepository)
+        if 'JavaScript' in repository.languages:
+            return PlayWrightTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path)
+
+
+class PlayWrightTestDependencyFinderJava:
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'com.microsoft.playwright':
+                webrepository.set_is_playwright_tested_java(True)
+                print("usa playwright")
+                return True
+        return False
+
+
+class PlayWrightTestDependencyFinderPython:
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'playwright' or dependency[0] == 'pytest-playwright':
+                webrepository.set_is_playwright_tested_python(True)
+                print("usa playwright")
+                return True
+        return False
+
+
+class PlayWrightTestDependencyFinderJavaScript:
+    def find_dependency(self, dependency_list, webrepository, repo_path):
+        for dependency in dependency_list:
+            if dependency[0] == 'playwright':
+                webrepository.set_is_playwright_tested_javascript(True)
+                print("usa playwright")
+                return True
+
+        import os
+        for root, dirs, files in os.walk(repo_path):
+            if 'playwright.config.js' in files:
+                webrepository.set_is_playwright_tested_javascript(True)
+                print("usa playwright")
+                return True
+        return False
+
+
+class PuppeteerTestDependencyFinder(TestDependencyFinderInterface, ABC):
+
+    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        if 'Java' in repository.languages:
+            return PuppeteerTestDependencyFinderJava().find_dependency(dependencies, webrepository)
+        if 'Python' in repository.languages:
+            return PuppeteerTestDependencyFinderPython().find_dependency(dependencies, webrepository)
+        if 'JavaScript' in repository.languages:
+            return PuppeteerTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository)
+
+
+class PuppeteerTestDependencyFinderJava:
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'org.webjars.npm' and dependency[1] == 'puppeteer':
+                webrepository.set_is_puppeteer_tested_java(True)
+                print("usa puppeteer")
+                return True
+        return False
+
+
+class PuppeteerTestDependencyFinderPython:
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'pyppeteer':
+                webrepository.set_is_puppeteer_tested_python(True)
+                print("usa puppeteer")
+                return True
+        return False
+
+
+class PuppeteerTestDependencyFinderJavaScript:
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'puppeteer':
+                webrepository.set_is_puppeteer_tested_javascript(True)
+                print("usa puppeteer")
+                return True
+        return False
+
+
+class CypressTestDependencyFinder(TestDependencyFinderInterface, ABC):
+    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        import os
+        for root, dirs, files in os.walk(repo_path):
+            if 'cypress.json' in files:
+                webrepository.set_is_cypress_tested(True)
+                print("usa cypress")
+                return True
+        return False
+
+
+class LocustTestDependencyFinder(TestDependencyFinderInterface, ABC):
+    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        if 'Java' in repository.languages:
+            return LocustTestDependencyFinderJava().find_dependency(dependencies, webrepository)
+        if 'Python' in repository.languages:
+            return LocustTestDependencyFinderPython().find_dependency(dependencies, webrepository)
+        if 'JavaScript' in repository.languages:
+            return LocustTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository)
+
+
+class LocustTestDependencyFinderJava:
+
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'com.github.myzhan' and dependency[1] == 'locust4j':
+                webrepository.set_is_locust_tested_java(True)
+                print("usa locust")
+                return True
+        return False
+
+
+class LocustTestDependencyFinderPython:
+
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'locust':
+                webrepository.set_is_locust_tested_python(True)
+                print("usa locust")
+                return True
+        return False
+
+
+class LocustTestDependencyFinderJavaScript:
+
+    def find_dependency(self, dependency_list, webrepository):
+        for dependency in dependency_list:
+            if dependency[0] == 'locust':
+                webrepository.set_is_locust_tested_javascript(True)
+                print("usa locust")
+                return True
+        return False
+
+
+class JMeterTestDependencyFinder(TestDependencyFinderInterface, ABC):
+    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        import os
+        for root, dirs, files in os.walk(repo_path):
+            for file in files:
+                if file.endswith('.jmx'):
+                    webrepository.set_is_jmeter_tested(True)
+                    print("Usa JMeter")
+                    return True
         return False

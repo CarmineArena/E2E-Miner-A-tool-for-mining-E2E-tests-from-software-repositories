@@ -11,20 +11,20 @@ class Analyzer(ABC):
 
 class DependencyFileFinderInterface(ABC):
     @abstractmethod
-    def find_dependency_file(self, repository):
+    def find_dependency_file(self, repository, dependencies):
         pass
 
     @staticmethod
-    def factory_finder(main_language):
-        if main_language == 'Java':
+    def factory_finder(language):
+        if language == 'Java':
             from RepositoryAnalyzer.Analyzer import JavaDependencyFileFinder
             return JavaDependencyFileFinder()
 
-        elif main_language == 'Python':
+        elif language == 'Python':
             from RepositoryAnalyzer.Analyzer import PythonDependencyFileFinder
             return PythonDependencyFileFinder()
 
-        elif main_language == 'JavaScript':
+        elif language == 'JavaScript':
             from RepositoryAnalyzer.Analyzer import JavaScriptDependencyFileFinder
             return JavaScriptDependencyFileFinder()
         else:

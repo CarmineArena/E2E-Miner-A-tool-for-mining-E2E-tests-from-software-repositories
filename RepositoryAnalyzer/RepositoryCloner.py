@@ -21,7 +21,8 @@ class Cloner:
         repo_path = ""
 
         try:
-            repo_name = repo_url.split("/")[-1].split(".")[0]
+            # repo_name = repo_url.split("/")[-1].split(".")[0]
+            repo_name = repository.replace("/", "\\")
             repo_path = os.path.join(self.output_folder, repo_name)
 
             if not os.path.exists(repo_path):
@@ -29,6 +30,11 @@ class Cloner:
                 logging.info('repository clonata')
                 print(f"Repository '{repo_name}' cloned successfully.")
                 print("ho appena clonato " + str(repo_path))
+                logging.info("ho appena clonato " + str(repo_path))
+                return repo_path
+            else:
+                logging.warning("ho già trovato clonato " + str(repo_path))
+                print("ho già trovato clonato " + str(repo_path))
                 return repo_path
 
         except Exception as e:
