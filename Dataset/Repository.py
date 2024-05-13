@@ -117,6 +117,7 @@ class Repository(Base):
         # Unisci tutte le stringhe dei metrics usando il punto e virgola come separatore
         output_string = "; ".join(metrics_strings)
         return output_string
+
     def convert_list_in_string(self, general_list):
         string = ""
         for element in general_list:
@@ -138,35 +139,45 @@ class Repository(Base):
 
 class WebRepository:
 
-    def __init__(self, idrepository, name, is_web_java=False, is_web_python=False, is_web_javascript=False):
+    def __init__(self, idrepository, name):
         self.IDrepository = idrepository
         self.name = name
-        self.is_web_java = is_web_java
-        self.is_web_python = is_web_python
-        self.is_web_javascript = is_web_javascript
+        self.is_web_java = False
+        self.is_web_python = False
+        self.is_web_javascript = False
+        self.is_web_typescript = False
         self.is_selenium_tested_java = False
         self.is_selenium_tested_python = False
         self.is_selenium_tested_javascript = False
-        self.is_puppeteer_tested_java = False
+        self.is_selenium_tested_typescript = False
+        # self.is_puppeteer_tested_java = False
         self.is_puppeteer_tested_python = False
         self.is_puppeteer_tested_javascript = False
+        self.is_puppeteer_tested_typescript = False
         self.is_playwright_tested_java = False
         self.is_playwright_tested_python = False
         self.is_playwright_tested_javascript = False
-        self.is_cypress_tested = False
+        self.is_playwright_tested_typescript = False
+        self.is_cypress_tested_javascript = False
+        self.is_cypress_tested_typescript = False
         self.is_locust_tested_java = False
         self.is_locust_tested_python = False
-        self.is_locust_tested_javascript = False
+        # self.is_locust_tested_javascript = False
         self.is_jmeter_tested = False
+        self.web_dependencies = []
+        self.test_path = []
 
-    def set_is_web_java(self, conditions):
-        self.is_web_java = conditions
+    def set_is_web_java(self, value):
+        self.is_web_java = value
 
-    def set_is_web_python(self, conditions):
-        self.is_web_python = conditions
+    def set_is_web_python(self, value):
+        self.is_web_python = value
 
-    def set_is_web_javascript(self, conditions):
-        self.is_web_javascript = conditions
+    def set_is_web_javascript(self, value):
+        self.is_web_javascript = value
+
+    def set_is_web_typescript(self, value):
+        self.is_web_typescript = value
 
     def get_is_selenium_tested_java(self):
         return self.is_selenium_tested_java
@@ -186,11 +197,11 @@ class WebRepository:
     def set_is_selenium_tested_javascript(self, value):
         self.is_selenium_tested_javascript = value
 
-    def get_is_puppeteer_tested_java(self):
-        return self.is_puppeteer_tested_java
+    def get_is_selenium_tested_typescript(self):
+        return self.is_selenium_tested_typescript
 
-    def set_is_puppeteer_tested_java(self, value):
-        self.is_puppeteer_tested_java = value
+    def set_is_selenium_tested_typescript(self, value):
+        self.is_selenium_tested_typescript = value
 
     def get_is_puppeteer_tested_python(self):
         return self.is_puppeteer_tested_python
@@ -203,6 +214,12 @@ class WebRepository:
 
     def set_is_puppeteer_tested_javascript(self, value):
         self.is_puppeteer_tested_javascript = value
+
+    def get_is_puppeteer_tested_typescript(self):
+        return self.is_puppeteer_tested_typescript
+
+    def set_is_puppeteer_tested_typescript(self, value):
+        self.is_puppeteer_tested_typescript = value
 
     def get_is_playwright_tested_java(self):
         return self.is_playwright_tested_java
@@ -222,9 +239,17 @@ class WebRepository:
     def set_is_playwright_tested_javascript(self, value):
         self.is_playwright_tested_javascript = value
 
+    def get_is_cypress_tested_javascript(self):
+        return self.is_cypress_tested_javascript
 
-    def set_is_cypress_tested(self, conditions):
-        self.is_cypress_tested = conditions
+    def set_is_cypress_tested_javascript(self, conditions):
+        self.is_cypress_tested_javascript = conditions
+
+    def get_is_cypress_tested_typescript(self):
+        return self.is_cypress_tested_typescript
+
+    def set_is_cypress_tested_typescript(self, conditions):
+        self.is_cypress_tested_typescript = conditions
 
     def get_is_locust_tested_java(self):
         return self.is_locust_tested_java
@@ -238,14 +263,17 @@ class WebRepository:
     def set_is_locust_tested_python(self, value):
         self.is_locust_tested_python = value
 
-    def get_is_locust_tested_javascript(self):
-        return self.is_locust_tested_javascript
-
-    def set_is_locust_tested_javascript(self, value):
-        self.is_locust_tested_javascript = value
-
     def set_is_jmeter_tested(self, conditions):
         self.is_jmeter_tested = conditions
+
+    def set_web_dependency(self, dependencies):
+        self.web_dependencies = dependencies
+
+    def set_test_path(self, path_list):
+        self.test_path = path_list
+
+    def add_path_in_list(self, list):
+        self.test_path += list
 
 
 class WebRepositoryDAO(Base):
@@ -256,20 +284,27 @@ class WebRepositoryDAO(Base):
     is_web_java = Column(Boolean())
     is_web_python = Column(Boolean())
     is_web_javascript = Column(Boolean())
+    is_web_typescript = Column(Boolean())
     is_selenium_tested_java = Column(Boolean())
     is_selenium_tested_python = Column(Boolean())
     is_selenium_tested_javascript = Column(Boolean())
-    is_puppeteer_tested_java = Column(Boolean())
+    is_selenium_tested_typescript = Column(Boolean())
+    # is_puppeteer_tested_java = Column(Boolean())
     is_puppeteer_tested_python = Column(Boolean())
     is_puppeteer_tested_javascript = Column(Boolean())
+    is_puppeteer_tested_typescript = Column(Boolean())
     is_playwright_tested_java = Column(Boolean())
     is_playwright_tested_python = Column(Boolean())
     is_playwright_tested_javascript = Column(Boolean())
-    is_cypress_tested = Column(Boolean())
+    is_playwright_tested_typescript = Column(Boolean())
+    is_cypress_tested_javascript = Column(Boolean())
+    is_cypress_tested_typescript = Column(Boolean())
     is_locust_tested_java = Column(Boolean())
     is_locust_tested_python = Column(Boolean())
-    is_locust_tested_javascript = Column(Boolean())
+    # is_locust_tested_javascript = Column(Boolean())
     is_jmeter_tested = Column(Boolean())
+    web_dependencies = Column(String())
+    test_path = Column(String())
 
     def __init__(self, WebRepository):
         self.IDrepository = WebRepository.IDrepository
@@ -277,23 +312,36 @@ class WebRepositoryDAO(Base):
         self.is_web_java = WebRepository.is_web_java
         self.is_web_python = WebRepository.is_web_python
         self.is_web_javascript = WebRepository.is_web_javascript
+        self.is_web_typescript = WebRepository.is_web_typescript
         self.is_selenium_tested_java = WebRepository.is_selenium_tested_java
         self.is_selenium_tested_python = WebRepository.is_selenium_tested_python
         self.is_selenium_tested_javascript = WebRepository.is_selenium_tested_javascript
-        self.is_puppeteer_tested_java = WebRepository.is_puppeteer_tested_java
+        self.is_selenium_tested_typescript = WebRepository.is_selenium_tested_typescript
+        # self.is_puppeteer_tested_java = WebRepository.is_puppeteer_tested_java
         self.is_puppeteer_tested_python = WebRepository.is_puppeteer_tested_python
         self.is_puppeteer_tested_javascript = WebRepository.is_puppeteer_tested_javascript
+        self.is_puppeteer_tested_typescript = WebRepository.is_puppeteer_tested_typescript
         self.is_playwright_tested_java = WebRepository.is_playwright_tested_java
         self.is_playwright_tested_python = WebRepository.is_playwright_tested_python
         self.is_playwright_tested_javascript = WebRepository.is_playwright_tested_javascript
-        self.is_cypress_tested = WebRepository.is_cypress_tested
+        self.is_playwright_tested_typescript = WebRepository.is_playwright_tested_typescript
+        self.is_cypress_tested_javascript = WebRepository.is_cypress_tested_javascript
+        self.is_cypress_tested_typescript = WebRepository.is_cypress_tested_typescript
         self.is_locust_tested_java = WebRepository.is_locust_tested_java
         self.is_locust_tested_python = WebRepository.is_locust_tested_python
-        self.is_locust_tested_javascript = WebRepository.is_locust_tested_javascript
+        # self.is_locust_tested_javascript = WebRepository.is_locust_tested_javascript
         self.is_jmeter_tested = WebRepository.is_jmeter_tested
+        self.web_dependencies = self.convert_list_in_string(WebRepository.web_dependencies)
+        self.test_path = self.convert_list_in_string(WebRepository.test_path)
         Base.metadata.create_all(engine)
 
     def add_web_repository_to_db(self):
         local_session = Session(bind=engine)
         local_session.add(self)
         local_session.commit()
+
+    def convert_list_in_string(self, general_list):
+        string = ""
+        for element in general_list:
+            string = string + element + "; "
+        return string

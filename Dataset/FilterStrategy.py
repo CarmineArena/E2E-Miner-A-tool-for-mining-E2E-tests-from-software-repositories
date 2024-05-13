@@ -125,5 +125,8 @@ class Filter:
                     print("l'id è " + str(repository.ID) + " il nome è " + repository.name)
                     break
 
+            # if len(filtered_repositories) > 10:
+            #     break
+
             print(len(filtered_repositories))
         return filtered_repositories

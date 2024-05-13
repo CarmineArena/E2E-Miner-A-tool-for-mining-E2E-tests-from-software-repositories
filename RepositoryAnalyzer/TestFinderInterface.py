@@ -1,463 +1,302 @@
 from abc import ABC, abstractmethod
-
-'''
-class TestDependencyFinderInterface(ABC):
-
-    @abstractmethod
-    def factory_test_dependency(self, repository):
-        pass
-
-
-class SeleniumDependencyFinderInterface(TestDependencyFinderInterface):
-
-    def factory_test_dependency(self, language):
-        if language == 'Java':
-            if self.check_implementation(SeleniumDependencyFinderInJava):
-                return SeleniumDependencyFinderInJava()
-        elif language == 'Python':
-            if self.check_implementation(SeleniumDependencyFinderInPython):
-                return SeleniumDependencyFinderInPython()
-        elif language == 'JavaScript':
-            if self.check_implementation(SeleniumDependencyFinderInJavaScript):
-                return SeleniumDependencyFinderInJavaScript()
-
-    @classmethod
-    def check_implementation(cls, subclass):
-        required_methods = ['find_test_dependency_in_repository']
-        for method_name in required_methods:
-            if not hasattr(subclass, method_name) or not callable(getattr(subclass, method_name)):
-                raise TypeError(f"Class {subclass.__name__} must implement method {method_name}")
-        return True
-
-
-class PlayWrightDependencyFinderInterface(TestDependencyFinderInterface):
-
-    def factory_test_dependency(self, language):
-        if language == 'Java':
-            if self.check_implementation(PlayWrightDependencyFinderInJava):
-                return PlayWrightDependencyFinderInJava()
-        elif language == 'Python':
-            if self.check_implementation(PlayWrightDependencyFinderInPython):
-                return PlayWrightDependencyFinderInPython()
-        elif language == 'JavaScript':
-            if self.check_implementation(PlayWrightDependencyFinderInJavaScript):
-                return PlayWrightDependencyFinderInJavaScript()
-
-    @classmethod
-    def check_implementation(cls, subclass):
-        required_methods = ['find_test_dependency_in_repository']
-        for method_name in required_methods:
-            if not hasattr(subclass, method_name) or not callable(getattr(subclass, method_name)):
-                raise TypeError(f"Class {subclass.__name__} must implement method {method_name}")
-        return True
-
-
-class PuppeteerDependencyFinderInterface(TestDependencyFinderInterface):
-
-    def factory_test_dependency(self, language):
-        if language == 'Java':
-            if self.check_implementation(PuppeteerDependencyFinderInJava):
-                return PuppeteerDependencyFinderInJava()
-        elif language == 'Python':
-            if self.check_implementation(PuppeteerDependencyFinderInPython):
-                return PuppeteerDependencyFinderInPython()
-        elif language == 'JavaScript':
-            if self.check_implementation(PuppeteerDependencyFinderInJavaScript):
-                return PuppeteerDependencyFinderInJavaScript()
-
-    @classmethod
-    def check_implementation(cls, subclass):
-        required_methods = ['find_test_dependency_in_repository']
-        for method_name in required_methods:
-            if not hasattr(subclass, method_name) or not callable(getattr(subclass, method_name)):
-                raise TypeError(f"Class {subclass.__name__} must implement method {method_name}")
-        return True
-
-
-class CypressDependencyFinderInterface(TestDependencyFinderInterface):
-    def factory_test_dependency(self, language):
-        if language == 'Java':
-            if self.check_implementation(CypressDependencyFinderInJava):
-                return CypressDependencyFinderInJava()
-        elif language == 'Python':
-            if self.check_implementation(CypressDependencyFinderInPython):
-                return CypressDependencyFinderInPython()
-        elif language == 'JavaScript':
-            if self.check_implementation(CypressDependencyFinderInJavaScript):
-                return CypressDependencyFinderInJavaScript()
-
-    @classmethod
-    def check_implementation(cls, subclass):
-        required_methods = ['find_test_dependency_in_repository']
-        for method_name in required_methods:
-            if not hasattr(subclass, method_name) or not callable(getattr(subclass, method_name)):
-                raise TypeError(f"Class {subclass.__name__} must implement method {method_name}")
-        return True
-
-
-class LocustDependencyFinderInterface(TestDependencyFinderInterface):
-    def factory_test_dependency(self, language):
-        if language == 'Java':
-            if self.check_implementation(LocustDependencyFinderInJava):
-                return LocustDependencyFinderInJava()
-        elif language == 'Python':
-            if self.check_implementation(LocustDependencyFinderInPython):
-                return LocustDependencyFinderInPython()
-        elif language == 'JavaScript':
-            if self.check_implementation(LocustDependencyFinderInJavaScript):
-                return LocustDependencyFinderInJavaScript()
-
-    @classmethod
-    def check_implementation(cls, subclass):
-        required_methods = ['find_test_dependency_in_repository']
-        for method_name in required_methods:
-            if not hasattr(subclass, method_name) or not callable(getattr(subclass, method_name)):
-                raise TypeError(f"Class {subclass.__name__} must implement method {method_name}")
-        return True
-
-
-class JMeterDependencyFinderInterface(TestDependencyFinderInterface):
-    def factory_test_dependency(self, language):
-        if language == 'Java':
-            if self.check_implementation(JMeterDependencyFinderInJava):
-                return JMeterDependencyFinderInJava()
-        elif language == 'Python':
-            if self.check_implementation(JMeterDependencyFinderInPython):
-                return JMeterDependencyFinderInPython()
-        elif language == 'JavaScript':
-            if self.check_implementation(LocustDependencyFinderInJavaScript):
-                return JMeterDependencyFinderInJavaScript()
-
-    @classmethod
-    def check_implementation(cls, subclass):
-        required_methods = ['find_test_dependency_in_repository']
-        for method_name in required_methods:
-            if not hasattr(subclass, method_name) or not callable(getattr(subclass, method_name)):
-                raise TypeError(f"Class {subclass.__name__} must implement method {method_name}")
-        return True
-
-
-class JMeterDependencyFinderInJavaScript(JMeterDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        import os
-        for root, dirs, files in os.walk(repository):
-            for file in files:
-                if file.endswith('.jmx'):
-                    webrepository.set_is_jmeter_tested(True)
-                    print("Usa JMeter")
-                    return True
-        return False
-
-
-class JMeterDependencyFinderInPython(JMeterDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-
-        for dependency in dependency_list:
-            if dependency[0] == 'pymeter':
-                webrepository.set_is_jmeter_tested(True)
-                print("usa Jmeter")
-                return True
-
-        import os
-        for root, dirs, files in os.walk(repository):
-            for file in files:
-                if file.endswith('.jmx'):
-                    webrepository.set_is_jmeter_tested(True)
-                    print("Usa JMeter")
-                    return True
-        return False
-
-
-class JMeterDependencyFinderInJava(JMeterDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        import os
-        for root, dirs, files in os.walk(repository):
-            for file in files:
-                if file.endswith('.jmx'):
-                    webrepository.set_is_jmeter_tested(True)
-                    print("Usa JMeter")
-                    return True
-        return False
-
-
-class LocustDependencyFinderInJava(LocustDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'com.github.myzhan' and dependency[1] == 'locust4j':
-                webrepository.set_is_locust_tested(True)
-                print("usa locust")
-                return True
-        return False
-
-
-class LocustDependencyFinderInPython(LocustDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'locust':
-                webrepository.set_is_locust_tested(True)
-                print("usa locust")
-                return True
-        return False
-
-
-class LocustDependencyFinderInJavaScript(LocustDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'locust':
-                webrepository.set_is_locust_tested(True)
-                print("usa locust")
-                return True
-        return False
-
-
-class CypressDependencyFinderInJava(CypressDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        import os
-        for root, dirs, files in os.walk(repository):
-            if 'cypress.json' in files:
-                webrepository.set_is_cypress_tested(True)
-                print("usa cypress")
-                return True
-        return False
-
-
-class CypressDependencyFinderInPython(CypressDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        import os
-        for root, dirs, files in os.walk(repository):
-            if 'cypress.json' in files:
-                print("usa cypress")
-                webrepository.set_is_cypress_tested(True)
-                return True
-        return False
-
-
-class CypressDependencyFinderInJavaScript(CypressDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'cypress':
-                webrepository.set_is_cypress_tested(True)
-                print("usa cypress")
-                return True
-        return False
-
-
-class PuppeteerDependencyFinderInJava(PuppeteerDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'org.webjars.npm' and dependency[1] == 'puppeteer':
-                webrepository.set_is_puppeteer_tested(True)
-                print("usa puppeteer")
-                return True
-        return False
-
-
-class PuppeteerDependencyFinderInPython(PuppeteerDependencyFinderInterface):
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'pyppeteer':
-                webrepository.set_is_puppeteer_tested(True)
-                print("usa puppeteer")
-                return True
-        return False
-
-
-class PuppeteerDependencyFinderInJavaScript(PuppeteerDependencyFinderInterface):
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'puppeteer':
-                webrepository.set_is_puppeteer_tested(True)
-                print("usa puppeteer")
-                return True
-        return False
-
-
-class PlayWrightDependencyFinderInJavaScript(PlayWrightDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'playwright':
-                webrepository.set_is_playwright_tested(True)
-                print("usa playwright")
-                return True
-        return False
-
-
-class PlayWrightDependencyFinderInJava(PlayWrightDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'com.microsoft.playwright':
-                webrepository.set_is_playwright_tested(True)
-                print("usa playwright")
-                return True
-        return False
-
-
-class PlayWrightDependencyFinderInPython(PlayWrightDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'pytest-playwright':
-                webrepository.set_is_playwright_tested(True)
-                print("usa playwright")
-                return True
-        return False
-
-
-class SeleniumDependencyFinderInJava(SeleniumDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'org.seleniumhq.selenium':
-                webrepository.set_is_selenium_tested(True)
-                print("usa selenium")
-                return True
-        return False
-
-
-class SeleniumDependencyFinderInPython(SeleniumDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'selenium':
-                webrepository.set_is_selenium_tested(True)
-                print("usa selenium")
-                return True
-        return False
-
-
-class SeleniumDependencyFinderInJavaScript(SeleniumDependencyFinderInterface):
-
-    def find_test_dependency_in_repository(self, repository, dependency_list, webrepository):
-        for dependency in dependency_list:
-            if dependency[0] == 'selenium':
-                webrepository.set_is_selenium_tested(True)
-                print("usa selenium")
-                return True
-        return False
-'''
+import os
 
 
 class TestDependencyFinderInterface(ABC):
 
     @abstractmethod
-    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+    def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
         pass
 
 
 class SeleniumTestDependencyFinder(TestDependencyFinderInterface, ABC):
 
-    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+    def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
         if 'Java' in repository.languages:
-            return SeleniumTestDependencyFinderJava().find_dependency(dependencies, webrepository)
+            return SeleniumTestDependencyFinderJava().find_dependency(dependencies, webrepository, repo_path)
         if 'Python' in repository.languages:
-            return SeleniumTestDependencyFinderPython().find_dependency(dependencies, webrepository)
+            return SeleniumTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path)
         if 'JavaScript' in repository.languages:
-            return SeleniumTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository)
+            return SeleniumTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path)
+        if 'TypeScript' in repository.languages:
+            return SeleniumTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path)
 
 
-class SeleniumTestDependencyFinderJava:
-    def find_dependency(self, dependency_list, webrepository):
+class ToolFinderForLanguage(ABC):
+
+    @abstractmethod
+    def find_dependency(self, dependency_list, webrepository, repo_path):
+        pass
+
+
+class SeleniumTestDependencyFinderJava(ToolFinderForLanguage, ABC):
+    def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
             if dependency[0] == 'org.seleniumhq.selenium':
-                webrepository.set_is_selenium_tested_java(True)
+                path_list = self.find_import_selenium(repo_path)
+                if len(path_list) > 0:
+                    webrepository.set_is_selenium_tested_java(True)
+                    webrepository.add_path_in_list(path_list)
                 print("usa selenium")
                 return True
         return False
 
+    def find_import_selenium(self, directory):
+        files_with_selenium_import = []
 
-class SeleniumTestDependencyFinderPython:
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.java'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'import org.openqa.selenium' in line:
+                                files_with_selenium_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_selenium_import
 
-    def find_dependency(self, dependency_list, webrepository):
+
+class SeleniumTestDependencyFinderPython(ToolFinderForLanguage, ABC):
+
+    def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
             if dependency[0] == 'selenium':
-                webrepository.set_is_selenium_tested_python(True)
+                path_list = self.find_import_selenium(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
+                    webrepository.set_is_selenium_tested_python(True)
                 print("usa selenium")
                 return True
         return False
 
+    def find_import_selenium(self, directory):
+        files_with_selenium_import = []
 
-class SeleniumTestDependencyFinderJavaScript:
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.py'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'from selenium import' in line:
+                                files_with_selenium_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_selenium_import
 
-    def find_dependency(self, dependency_list, webrepository):
+
+class SeleniumTestDependencyFinderJavaScript(ToolFinderForLanguage, ABC):
+
+    def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
             if dependency[0] == 'selenium' or dependency[0] == 'selenium-webdriver':
-                webrepository.set_is_selenium_tested_javascript(True)
+                path_list = self.find_import_selenium(repo_path)
+                if len(path_list) > 0:
+                    webrepository.set_is_selenium_tested_javascript(True)
+                    webrepository.add_path_in_list(path_list)
                 print("usa selenium")
                 return True
         return False
+
+    def find_import_selenium(self, directory):
+        files_with_selenium_import = []
+
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.js'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'require(\'selenium-webdriver\')' in line or 'import selenium' in line:
+                                files_with_selenium_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_selenium_import
+
+
+class SeleniumTestDependencyFinderTypeScript(ToolFinderForLanguage, ABC):
+
+    def find_dependency(self, dependency_list, webrepository, repo_path):
+        for dependency in dependency_list:
+            if dependency[0] == '@types/selenium' or dependency[0] == '#types/selenium-webdriver':
+                path_list = self.find_import_selenium(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
+                    webrepository.set_is_selenium_tested_typescript(True)
+                    print("usa selenium")
+                return True
+        return False
+
+    def find_import_selenium(self, directory):
+        files_with_selenium_import = []
+
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.ts'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'from "selenium-webdriver"' in line:
+                                files_with_selenium_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_selenium_import
 
 
 class PlayWrightTestDependencyFinder(TestDependencyFinderInterface, ABC):
 
-    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+    def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
         if 'Java' in repository.languages:
-            return PlayWrightTestDependencyFinderJava().find_dependency(dependencies, webrepository)
+            return PlayWrightTestDependencyFinderJava().find_dependency(dependencies, webrepository, repo_path)
         if 'Python' in repository.languages:
-            return PlayWrightTestDependencyFinderPython().find_dependency(dependencies, webrepository)
+            return PlayWrightTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path)
         if 'JavaScript' in repository.languages:
             return PlayWrightTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path)
+        if 'TypeScript' in repository.languages:
+            return PlayWrightTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path)
 
 
-class PlayWrightTestDependencyFinderJava:
-    def find_dependency(self, dependency_list, webrepository):
+class PlayWrightTestDependencyFinderJava(ToolFinderForLanguage, ABC):
+    def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
             if dependency[0] == 'com.microsoft.playwright':
-                webrepository.set_is_playwright_tested_java(True)
+                path_list = self.find_import_playwright(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
+                    webrepository.set_is_playwright_tested_java(True)
                 print("usa playwright")
                 return True
         return False
 
+    def find_import_playwright(self, directory):
+        files_with_playwright_import = []
 
-class PlayWrightTestDependencyFinderPython:
-    def find_dependency(self, dependency_list, webrepository):
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.java'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'import com.microsoft.playwright' in line:
+                                files_with_playwright_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_playwright_import
+
+
+class PlayWrightTestDependencyFinderPython(ToolFinderForLanguage, ABC):
+    def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
             if dependency[0] == 'playwright' or dependency[0] == 'pytest-playwright':
-                webrepository.set_is_playwright_tested_python(True)
+                path_list = self.find_import_playwright(repo_path)
+                if len(path_list) > 0:
+                    webrepository.set_is_playwright_tested_python(True)
+                    webrepository.add_path_in_list(path_list)
                 print("usa playwright")
                 return True
         return False
 
+    def find_import_playwright(self, directory):
+        files_with_playwright_import = []
 
-class PlayWrightTestDependencyFinderJavaScript:
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.py'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'from playwright.async_api import' in line or 'from playwright.sync_api import' in line:
+                                files_with_playwright_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_playwright_import
+
+
+class PlayWrightTestDependencyFinderJavaScript(ToolFinderForLanguage, ABC):
     def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
             if dependency[0] == 'playwright':
-                webrepository.set_is_playwright_tested_javascript(True)
                 print("usa playwright")
+                path_list = self.find_import_playwright(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
+                    webrepository.set_is_playwright_tested_javascript(True)
                 return True
 
-        import os
-        for root, dirs, files in os.walk(repo_path):
-            if 'playwright.config.js' in files:
-                webrepository.set_is_playwright_tested_javascript(True)
+    def find_import_playwright(self, directory):
+        files_with_playwright_import = []
+
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.js'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'from \'@playwright/test\'' in line:
+                                files_with_playwright_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_playwright_import
+
+
+class PlayWrightTestDependencyFinderTypeScript(ToolFinderForLanguage, ABC):
+    def find_dependency(self, dependency_list, webrepository, repo_path):
+        for dependency in dependency_list:
+            if dependency[0] == 'playwright':
                 print("usa playwright")
+                path_list = self.find_import_playwright(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
+                    webrepository.set_is_playwright_tested_typescript(True)
                 return True
-        return False
+
+    def find_import_playwright(self, directory):
+        files_with_playwright_import = []
+
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.ts'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'from \'@playwright/test\'' in line:
+                                files_with_playwright_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_playwright_import
 
 
 class PuppeteerTestDependencyFinder(TestDependencyFinderInterface, ABC):
 
-    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
-        if 'Java' in repository.languages:
-            return PuppeteerTestDependencyFinderJava().find_dependency(dependencies, webrepository)
+    def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        # if 'Java' in repository.languages:
+        #    return PuppeteerTestDependencyFinderJava().find_dependency(dependencies, webrepository)
         if 'Python' in repository.languages:
-            return PuppeteerTestDependencyFinderPython().find_dependency(dependencies, webrepository)
+            return PuppeteerTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path)
         if 'JavaScript' in repository.languages:
-            return PuppeteerTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository)
+            return PuppeteerTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path)
+        if 'TypeScript' in repository.languages:
+            return PuppeteerTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path)
 
 
+'''
 class PuppeteerTestDependencyFinderJava:
     def find_dependency(self, dependency_list, webrepository):
         for dependency in dependency_list:
@@ -466,71 +305,228 @@ class PuppeteerTestDependencyFinderJava:
                 print("usa puppeteer")
                 return True
         return False
+'''
 
 
-class PuppeteerTestDependencyFinderPython:
-    def find_dependency(self, dependency_list, webrepository):
+class PuppeteerTestDependencyFinderPython(ToolFinderForLanguage, ABC):
+    def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
             if dependency[0] == 'pyppeteer':
-                webrepository.set_is_puppeteer_tested_python(True)
+                path_list = self.find_import_puppeteer(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
+                    webrepository.set_is_puppeteer_tested_python(True)
                 print("usa puppeteer")
                 return True
         return False
 
+    def find_import_puppeteer(self, directory):
+        files_with_puppeteer_import = []
 
-class PuppeteerTestDependencyFinderJavaScript:
-    def find_dependency(self, dependency_list, webrepository):
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.py'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'from pyppeteer import' in line:
+                                files_with_puppeteer_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_puppeteer_import
+
+
+class PuppeteerTestDependencyFinderJavaScript(ToolFinderForLanguage, ABC):
+    def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
             if dependency[0] == 'puppeteer':
-                webrepository.set_is_puppeteer_tested_javascript(True)
+                path_list = self.find_import_puppeteer(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
+                    webrepository.set_is_puppeteer_tested_javascript(True)
                 print("usa puppeteer")
                 return True
         return False
+
+    def find_import_puppeteer(self, directory):
+        files_with_puppeteer_import = []
+
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.py'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'require(\'puppeteer\')' in line:
+                                files_with_puppeteer_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_puppeteer_import
+
+
+class PuppeteerTestDependencyFinderTypeScript(ToolFinderForLanguage, ABC):
+    def find_dependency(self, dependency_list, webrepository, repo_path):
+        for dependency in dependency_list:
+            if dependency[0] == '@types/puppeteer':
+                path_list = self.find_import_puppeteer(repo_path)
+                if len(path_list) > 0:
+                    webrepository.set_is_puppeteer_tested_typescript(True)
+                    webrepository.add_path_in_list(path_list)
+                print("usa puppeteer")
+                return True
+        return False
+
+    def find_import_puppeteer(self, directory):
+        files_with_puppeteer_import = []
+
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.ts'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'from \'puppeteer\'' in line:
+                                files_with_puppeteer_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_puppeteer_import
 
 
 class CypressTestDependencyFinder(TestDependencyFinderInterface, ABC):
-    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
-        import os
-        for root, dirs, files in os.walk(repo_path):
-            if 'cypress.json' in files:
-                webrepository.set_is_cypress_tested(True)
+    def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        if 'JavaScript' in repository.languages:
+            return CypressTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path)
+        if 'TypeScript' in repository.languages:
+            return CypressTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path)
+
+
+class CypressTestDependencyFinderJavaScript(ToolFinderForLanguage, ABC):
+    def find_dependency(self, dependencies, webrepository, repo_path):
+        for dependency in dependencies:
+            if dependency[0] == 'cypress':
+                path_list = self.find_import_cypress(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
+                    webrepository.set_is_cypress_tested_javascript(True)
                 print("usa cypress")
                 return True
         return False
 
+    def find_import_cypress(self, directory):
+        files_with_cypress_import = []
+
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.cy.js'):
+                    file_path = os.path.join(root, file_name)
+                    files_with_cypress_import.append(file_path)
+        return files_with_cypress_import
+
+
+class CypressTestDependencyFinderTypeScript(ToolFinderForLanguage, ABC):
+    def find_dependency(self, dependencies, webrepository, repo_path):
+        for dependency in dependencies:
+            if dependency[0] == 'cypress':
+                path_list = self.find_import_cypress(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
+                    webrepository.set_is_cypress_tested_typescript(True)
+                print("usa cypress")
+                return True
+        return False
+
+    def find_import_cypress(self, directory):
+        files_with_cypress_import = []
+
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.cy.ts'):
+                    file_path = os.path.join(root, file_name)
+                    files_with_cypress_import.append(file_path)
+        return files_with_cypress_import
+
 
 class LocustTestDependencyFinder(TestDependencyFinderInterface, ABC):
-    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
+    def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
         if 'Java' in repository.languages:
-            return LocustTestDependencyFinderJava().find_dependency(dependencies, webrepository)
+            return LocustTestDependencyFinderJava().find_dependency(dependencies, webrepository, repo_path)
         if 'Python' in repository.languages:
-            return LocustTestDependencyFinderPython().find_dependency(dependencies, webrepository)
-        if 'JavaScript' in repository.languages:
-            return LocustTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository)
+            return LocustTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path)
+        # if 'JavaScript' in repository.languages:
+        #     return LocustTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository)
 
 
-class LocustTestDependencyFinderJava:
+class LocustTestDependencyFinderJava(ToolFinderForLanguage, ABC):
 
-    def find_dependency(self, dependency_list, webrepository):
+    def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
             if dependency[0] == 'com.github.myzhan' and dependency[1] == 'locust4j':
-                webrepository.set_is_locust_tested_java(True)
+                path_list = self.find_import_locust(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
+                    webrepository.set_is_locust_tested_java(True)
                 print("usa locust")
                 return True
         return False
 
+    def find_import_locust(self, directory):
+        files_with_locust_import = []
 
-class LocustTestDependencyFinderPython:
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.java'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'import com.github.myzhan.locust4j' in line:
+                                files_with_locust_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_locust_import
 
-    def find_dependency(self, dependency_list, webrepository):
+
+class LocustTestDependencyFinderPython(ToolFinderForLanguage, ABC):
+
+    def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
-            if dependency[0] == 'locust':
+            if dependency[0] == 'locust' or dependency[0] == 'locustio':
                 webrepository.set_is_locust_tested_python(True)
+                path_list = self.find_import_locust(repo_path)
+                if len(path_list) > 0:
+                    webrepository.add_path_in_list(path_list)
                 print("usa locust")
                 return True
         return False
 
+    def find_import_locust(self, directory):
+        files_with_locust_import = []
 
+        # Attraversa ricorsivamente tutte le sottodirectory
+        for root, dirs, files in os.walk(directory):
+            for file_name in files:
+                if file_name.endswith('.py'):
+                    file_path = os.path.join(root, file_name)
+                    with open(file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            # Verifica se la riga contiene un'importazione di Selenium
+                            if 'from locust import' in line:
+                                files_with_locust_import.append(file_path)
+                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+        return files_with_locust_import
+
+
+'''
 class LocustTestDependencyFinderJavaScript:
 
     def find_dependency(self, dependency_list, webrepository):
@@ -540,15 +536,21 @@ class LocustTestDependencyFinderJavaScript:
                 print("usa locust")
                 return True
         return False
+'''
 
 
 class JMeterTestDependencyFinder(TestDependencyFinderInterface, ABC):
-    def find_test_dependency(self, dependencies, repository, webrepository, repo_path):
-        import os
+    def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        ret = False
         for root, dirs, files in os.walk(repo_path):
             for file in files:
                 if file.endswith('.jmx'):
                     webrepository.set_is_jmeter_tested(True)
+                    ret = True
+                    webrepository.test_path.append(os.path.join(root, file))
                     print("Usa JMeter")
-                    return True
-        return False
+
+        # if len(file_with_jmx_file) > 0:
+        #    webrepository.add_path_in_list(file_with_jmx_file)
+
+        return ret

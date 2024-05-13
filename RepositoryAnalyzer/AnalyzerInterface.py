@@ -27,6 +27,9 @@ class DependencyFileFinderInterface(ABC):
         elif language == 'JavaScript':
             from RepositoryAnalyzer.Analyzer import JavaScriptDependencyFileFinder
             return JavaScriptDependencyFileFinder()
+        elif language == 'TypeScript':
+            from RepositoryAnalyzer.Analyzer import JavaScriptDependencyFileFinder
+            return JavaScriptDependencyFileFinder()
         else:
             raise ValueError("Linguaggio non ancora implementato")
 

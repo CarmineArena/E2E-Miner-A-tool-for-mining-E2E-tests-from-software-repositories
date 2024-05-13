@@ -27,7 +27,7 @@ dataset = DataSet()
 # for rep in tutte:
 # session.add(RepositoryDAO(rep))
 
-filtro = Filter(is_fork=False, commits=2000, contributors=10, stargazers=100, languages=['Java', 'JavaScript', 'Python'])
+filtro = Filter(is_fork=False, commits=0, contributors=0, stargazers=0, languages=['TypeScript'])
 risultati_filtrati = dataset.filter_repositories(filtro)
 
 # filtroJava = Filter(is_fork=False, commits=2000, contributors=10, stargazers=100, languages=['Java'])
@@ -46,5 +46,5 @@ risultati_filtrati = dataset.filter_repositories(filtro)
 
 # print(risultati_JS)
 
-# analyzer = AnalyzerController(risultati_Java)
-# analyzer.analyze_repositories()
+analyzer = AnalyzerController(risultati_filtrati)
+analyzer.analyze_repositories()

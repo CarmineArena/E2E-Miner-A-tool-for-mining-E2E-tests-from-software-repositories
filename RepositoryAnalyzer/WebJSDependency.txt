@@ -22,9 +22,10 @@ aurelia-cli
 aurelia-testing
 next
 gatsby
-grunt
 nuxt
 jest
 jest-cli
 mocha
 jasmine
+koa
+koa-compose
