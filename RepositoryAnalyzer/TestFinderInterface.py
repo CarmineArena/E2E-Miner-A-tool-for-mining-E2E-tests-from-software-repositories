@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 import os
 
+from RepositoryAnalyzer.EncodingDetector import EncodingDetector
+
 
 class TestDependencyFinderInterface(ABC):
 
@@ -12,14 +14,20 @@ class TestDependencyFinderInterface(ABC):
 class SeleniumTestDependencyFinder(TestDependencyFinderInterface, ABC):
 
     def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
-        if 'Java' in repository.languages:
-            return SeleniumTestDependencyFinderJava().find_dependency(dependencies, webrepository, repo_path)
-        if 'Python' in repository.languages:
-            return SeleniumTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path)
-        if 'JavaScript' in repository.languages:
-            return SeleniumTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path)
-        if 'TypeScript' in repository.languages:
-            return SeleniumTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path)
+        dependency_founded = False
+        if 'Java' in repository.languages or repository.main_language == 'Java':
+            if SeleniumTestDependencyFinderJava().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        if 'Python' in repository.languages or repository.main_language == 'Python':
+            if SeleniumTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        if 'JavaScript' in repository.languages or repository.main_language == 'JavaScript':
+            if SeleniumTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        if 'TypeScript' in repository.languages or repository.main_language == 'TypeScript':
+            if SeleniumTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        return dependency_founded
 
 
 class ToolFinderForLanguage(ABC):
@@ -49,13 +57,18 @@ class SeleniumTestDependencyFinderJava(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.java'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r', encoding='utf-8') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'import org.openqa.selenium' in line:
-                                files_with_selenium_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'import org.openqa.selenium' in line:
+                                    files_with_selenium_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_selenium_import
 
 
@@ -80,13 +93,18 @@ class SeleniumTestDependencyFinderPython(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.py'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'from selenium import' in line:
-                                files_with_selenium_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'from selenium import' in line:
+                                    files_with_selenium_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_selenium_import
 
 
@@ -111,13 +129,18 @@ class SeleniumTestDependencyFinderJavaScript(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.js'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'require(\'selenium-webdriver\')' in line or 'import selenium' in line:
-                                files_with_selenium_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'require(\'selenium-webdriver\')' in line or 'import selenium' in line:
+                                    files_with_selenium_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_selenium_import
 
 
@@ -125,7 +148,7 @@ class SeleniumTestDependencyFinderTypeScript(ToolFinderForLanguage, ABC):
 
     def find_dependency(self, dependency_list, webrepository, repo_path):
         for dependency in dependency_list:
-            if dependency[0] == '@types/selenium' or dependency[0] == '#types/selenium-webdriver':
+            if dependency[0] == '@types/selenium' or dependency[0] == '@types/selenium-webdriver':
                 path_list = self.find_import_selenium(repo_path)
                 if len(path_list) > 0:
                     webrepository.add_path_in_list(path_list)
@@ -142,27 +165,38 @@ class SeleniumTestDependencyFinderTypeScript(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.ts'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'from "selenium-webdriver"' in line:
-                                files_with_selenium_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'from "selenium-webdriver"' in line:
+                                    files_with_selenium_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_selenium_import
 
 
 class PlayWrightTestDependencyFinder(TestDependencyFinderInterface, ABC):
 
     def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
-        if 'Java' in repository.languages:
-            return PlayWrightTestDependencyFinderJava().find_dependency(dependencies, webrepository, repo_path)
-        if 'Python' in repository.languages:
-            return PlayWrightTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path)
-        if 'JavaScript' in repository.languages:
-            return PlayWrightTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path)
-        if 'TypeScript' in repository.languages:
-            return PlayWrightTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path)
+        dependency_founded = False
+        if 'Java' in repository.languages or repository.main_language == 'Java':
+            if PlayWrightTestDependencyFinderJava().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        if 'Python' in repository.languages or repository.main_language == 'Python':
+            if PlayWrightTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        if 'JavaScript' in repository.languages or repository.main_language == 'JavaScript':
+            if PlayWrightTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        if 'TypeScript' in repository.languages or repository.main_language == 'TypeScript':
+            if PlayWrightTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        return dependency_founded
 
 
 class PlayWrightTestDependencyFinderJava(ToolFinderForLanguage, ABC):
@@ -185,13 +219,18 @@ class PlayWrightTestDependencyFinderJava(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.java'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'import com.microsoft.playwright' in line:
-                                files_with_playwright_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'import com.microsoft.playwright' in line:
+                                    files_with_playwright_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_playwright_import
 
 
@@ -215,13 +254,18 @@ class PlayWrightTestDependencyFinderPython(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.py'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'from playwright.async_api import' in line or 'from playwright.sync_api import' in line:
-                                files_with_playwright_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'from playwright.async_api import' in line or 'from playwright.sync_api import' in line:
+                                    files_with_playwright_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_playwright_import
 
 
@@ -244,13 +288,18 @@ class PlayWrightTestDependencyFinderJavaScript(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.js'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'from \'@playwright/test\'' in line:
-                                files_with_playwright_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'from \'@playwright/test\'' in line:
+                                    files_with_playwright_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_playwright_import
 
 
@@ -273,27 +322,37 @@ class PlayWrightTestDependencyFinderTypeScript(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.ts'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'from \'@playwright/test\'' in line:
-                                files_with_playwright_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'from \'@playwright/test\'' in line:
+                                    files_with_playwright_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_playwright_import
 
 
 class PuppeteerTestDependencyFinder(TestDependencyFinderInterface, ABC):
 
     def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
+        dependency_founded = False
         # if 'Java' in repository.languages:
         #    return PuppeteerTestDependencyFinderJava().find_dependency(dependencies, webrepository)
-        if 'Python' in repository.languages:
-            return PuppeteerTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path)
-        if 'JavaScript' in repository.languages:
-            return PuppeteerTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path)
-        if 'TypeScript' in repository.languages:
-            return PuppeteerTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path)
+        if 'Python' in repository.languages or repository.main_language == 'Python':
+            if PuppeteerTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        if 'JavaScript' in repository.languages or repository.main_language == 'JavaScript':
+            if PuppeteerTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        if 'TypeScript' in repository.languages or repository.main_language == 'TypeScript':
+            if PuppeteerTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        return dependency_founded
 
 
 '''
@@ -328,13 +387,18 @@ class PuppeteerTestDependencyFinderPython(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.py'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'from pyppeteer import' in line:
-                                files_with_puppeteer_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'from pyppeteer import' in line:
+                                    files_with_puppeteer_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_puppeteer_import
 
 
@@ -358,13 +422,18 @@ class PuppeteerTestDependencyFinderJavaScript(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.py'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'require(\'puppeteer\')' in line:
-                                files_with_puppeteer_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'require(\'puppeteer\')' in line:
+                                    files_with_puppeteer_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_puppeteer_import
 
 
@@ -388,22 +457,31 @@ class PuppeteerTestDependencyFinderTypeScript(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.ts'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'from \'puppeteer\'' in line:
-                                files_with_puppeteer_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'from \'puppeteer\'' in line:
+                                    files_with_puppeteer_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_puppeteer_import
 
 
 class CypressTestDependencyFinder(TestDependencyFinderInterface, ABC):
     def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
-        if 'JavaScript' in repository.languages:
-            return CypressTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path)
-        if 'TypeScript' in repository.languages:
-            return CypressTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path)
+        dependency_founded = False
+        if 'JavaScript' in repository.languages or repository.main_language == 'JavaScript':
+            if CypressTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        if 'TypeScript' in repository.languages or repository.main_language == 'TypeScript':
+            if CypressTestDependencyFinderTypeScript().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        return dependency_founded
 
 
 class CypressTestDependencyFinderJavaScript(ToolFinderForLanguage, ABC):
@@ -456,12 +534,16 @@ class CypressTestDependencyFinderTypeScript(ToolFinderForLanguage, ABC):
 
 class LocustTestDependencyFinder(TestDependencyFinderInterface, ABC):
     def has_test_dependency(self, dependencies, repository, webrepository, repo_path):
-        if 'Java' in repository.languages:
-            return LocustTestDependencyFinderJava().find_dependency(dependencies, webrepository, repo_path)
-        if 'Python' in repository.languages:
-            return LocustTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path)
+        dependency_founded = False
+        if 'Java' in repository.languages or repository.main_language == 'Java':
+            if LocustTestDependencyFinderJava().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
+        if 'Python' in repository.languages or repository.main_language == 'Python':
+            if LocustTestDependencyFinderPython().find_dependency(dependencies, webrepository, repo_path):
+                dependency_founded = True
         # if 'JavaScript' in repository.languages:
         #     return LocustTestDependencyFinderJavaScript().find_dependency(dependencies, webrepository)
+        return dependency_founded
 
 
 class LocustTestDependencyFinderJava(ToolFinderForLanguage, ABC):
@@ -485,13 +567,18 @@ class LocustTestDependencyFinderJava(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.java'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'import com.github.myzhan.locust4j' in line:
-                                files_with_locust_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'import com.github.myzhan.locust4j' in line:
+                                    files_with_locust_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_locust_import
 
 
@@ -516,13 +603,18 @@ class LocustTestDependencyFinderPython(ToolFinderForLanguage, ABC):
             for file_name in files:
                 if file_name.endswith('.py'):
                     file_path = os.path.join(root, file_name)
-                    with open(file_path, 'r') as file:
-                        lines = file.readlines()
-                        for line in lines:
-                            # Verifica se la riga contiene un'importazione di Selenium
-                            if 'from locust import' in line:
-                                files_with_locust_import.append(file_path)
-                                break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    encoding = EncodingDetector.detect_encoding(file_path)
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as file:
+                            lines = file.readlines()
+                            for line in lines:
+                                # Verifica se la riga contiene un'importazione di Selenium
+                                if 'from locust import' in line:
+                                    files_with_locust_import.append(file_path)
+                                    break  # Se l'importazione è stata trovata nel file, non è necessario cercare ulteriormente
+                    except (UnicodeDecodeError, IOError) as e:
+                        # Ignora il file in caso di errore di decodifica o di I/O
+                        print(f"Ignorato {file_path} a causa di un errore: {e}")
         return files_with_locust_import
 
 

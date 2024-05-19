@@ -27,7 +27,7 @@ dataset = DataSet()
 # for rep in tutte:
 # session.add(RepositoryDAO(rep))
 
-filtro = Filter(is_fork=False, commits=0, contributors=0, stargazers=0, languages=['TypeScript'])
+filtro = Filter(is_fork=False, commits=2000, contributors=10, stargazers=100, languages=['Java', 'Python', 'JavaScript', 'TypeScript'])
 risultati_filtrati = dataset.filter_repositories(filtro)
 
 # filtroJava = Filter(is_fork=False, commits=2000, contributors=10, stargazers=100, languages=['Java'])

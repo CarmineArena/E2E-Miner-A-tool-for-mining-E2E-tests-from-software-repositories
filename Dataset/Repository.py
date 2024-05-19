@@ -239,6 +239,12 @@ class WebRepository:
     def set_is_playwright_tested_javascript(self, value):
         self.is_playwright_tested_javascript = value
 
+    def get_is_playwright_tested_typescript(self):
+        return self.is_playwright_tested_typescript
+
+    def set_is_playwright_tested_typescript(self, value):
+        self.is_playwright_tested_typescript = value
+
     def get_is_cypress_tested_javascript(self):
         return self.is_cypress_tested_javascript
 
