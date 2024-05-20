@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 # from RepositoryAnalyzer.Analyzer import JavaDependencyFinder
 
 
@@ -19,11 +20,9 @@ class DependencyFileFinderInterface(ABC):
         if language == 'Java':
             from RepositoryAnalyzer.Analyzer import JavaDependencyFileFinder
             return JavaDependencyFileFinder()
-
         elif language == 'Python':
             from RepositoryAnalyzer.Analyzer import PythonDependencyFileFinder
             return PythonDependencyFileFinder()
-
         elif language == 'JavaScript':
             from RepositoryAnalyzer.Analyzer import JavaScriptDependencyFileFinder
             return JavaScriptDependencyFileFinder()
@@ -32,6 +31,7 @@ class DependencyFileFinderInterface(ABC):
             return JavaScriptDependencyFileFinder()
         else:
             raise ValueError("Linguaggio non ancora implementato")
+
 
 class WebAnalyzerInterface(ABC):
 

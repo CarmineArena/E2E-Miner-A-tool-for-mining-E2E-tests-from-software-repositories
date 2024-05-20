@@ -26,8 +26,6 @@ from RepositoryAnalyzer.TestFinderInterface import SeleniumTestDependencyFinder,
     LocustTestDependencyFinder, JMeterTestDependencyFinder
 
 
-
-
 def handle_remove_readonly(func, path, exc):
     excvalue = exc[1]
     if func in (os.rmdir, os.remove, os.unlink) and excvalue.errno == errno.EACCES:
@@ -38,7 +36,7 @@ def handle_remove_readonly(func, path, exc):
 
 
 class AnalyzerController(Analyzer, ABC):
-    def __init__(self, repository, max_threads=10, output_folder=r"C:\re"):
+    def __init__(self, repository, max_threads=10, output_folder=r"C:\rep"):
         self.repository = repository
         self.max_threads = max_threads
         self.output_folder = output_folder
@@ -121,27 +119,7 @@ class AnalyzerController(Analyzer, ABC):
 
                 self.repositories_queue.task_done()
 
-    '''
-            if WebAnalyzer().has_web_dependencies(web_list, dependencies):
-                print(repository_to_analyze.name + "è web")
-
-                for dependency in self.test_dependency:
-                    if dependency.factory_test_dependency(repository_to_analyze).find_test_dependency_in_repository(
-                            cloned_repository, dependencies, webrepository):
-                        print(repository_to_analyze.name + "è web tested")
-                print(webrepository.name + " oggetto creato correttamente")
-                with self.lock:
-                    WebRepositoryDAO(webrepository).add_web_repository_to_db()
-            else:
-                shutil.rmtree(cloned_repository, ignore_errors=False, onerror=handle_remove_readonly)
-                self.repositories_queue.task_done()
-                # repo = git.Repo(cloned_repository)
-                # repo.git.execute(['git', 'rm', '-rf', cloned_repository])
-                # time.sleep(5)
-                # shutil.rmtree(cloned_repository)
-    '''
-
-    def analyze_repositories(self):
+    def analyze_repositories(self): # analyze_repositories_with_thread
 
         # Definisci il comando da eseguire per disattivare core.protectNTFS
         command = ["git", "config", "--global", "core.protectNTFS", "false"]
@@ -311,7 +289,7 @@ class JavaScriptDependencyFinder(DependencyFinderInterface, ABC):
         # elif 'package-lock.json' in dependency_file:
         #    return self.analyze_packagelock_file(dependency_file, dependency_list)
 
-    def analyze_package_file(self, dependency_file, dependency_list):
+    def analyze_package_file(self, dependency_file, dependency_list): #fai bene questa cosa
         try:
             encoding = EncodingDetector.detect_encoding(dependency_file)
             with open(dependency_file, 'r', encoding=encoding) as file:
@@ -358,35 +336,6 @@ class JavaScriptDependencyFinder(DependencyFinderInterface, ABC):
         return cleaned_package_name
 
 
-'''
-with open(dependency_file, 'r') as file:
-    data = json.load(file)
-    # Definisci il pattern regex per estrarre il nome del pacchetto
-    pattern = r'^@?([^/]+)'
-
-    # Controlla se il file contiene una sezione "dependencies"
-    if 'dependencies' in data:
-        for dependency, version in data['dependencies'].items():
-            # Cerca il pattern nella dipendenza
-            match = re.match(pattern, dependency)
-            if match:
-                # Aggiungi il nome del pacchetto alla lista delle dipendenze
-                self.add_dependency_in_list((match.group(1), version), dependency_list)
-
-    # Controlla se il file contiene una sezione "devDependencies" (dipendenze di sviluppo)
-    if 'devDependencies' in data:
-        for dependency, version in data['devDependencies'].items():
-            # Cerca il pattern nella dipendenza
-            match = re.match(pattern, dependency)
-            if match:
-                # Aggiungi il nome del pacchetto alla lista delle dipendenze
-                self.add_dependency_in_list((match.group(1), version), dependency_list)
-
-print(dependency_list)
-return dependency_list
-'''
-
-
 class PythonDependencyFinder(DependencyFinderInterface, ABC):
 
     def find_dependency(self, dependency_file, dependency_list):
@@ -422,75 +371,25 @@ class JavaDependencyFinder(DependencyFinderInterface, ABC):
         print("vedo il file gradle di " + gradle_file)
         logging.info("vedo il file gradle di " + gradle_file)
         encoding = EncodingDetector.detect_encoding(gradle_file)
-        with open(gradle_file, 'r', encoding=encoding) as file:
-            # Cerca le dipendenze nel file Gradle
-            gradle_content = file.read()
-            pattern = re.compile(r"(['\"])(.*?):(.*?):(.*?)\1")
-            matches = pattern.findall(gradle_content)
-            print("reading " + gradle_file + "...")
-            for match in matches:
-                group_id, artifact_id, version = match[1:]
-                self.add_dependency_in_list((group_id, artifact_id, version), dependency_list)
+        try:
+            with open(gradle_file, 'r', encoding=encoding) as file:
+                # Cerca le dipendenze nel file Gradle
+                gradle_content = file.read()
+                pattern = re.compile(r"(['\"])(.*?):(.*?):(.*?)\1")
+                matches = pattern.findall(gradle_content)
+                print("reading " + gradle_file + "...")
+                for match in matches:
+                    group_id, artifact_id, version = match[1:]
+                    self.add_dependency_in_list((group_id, artifact_id, version), dependency_list)
+        except (UnicodeDecodeError, IOError) as e:
+            # Ignora il file in caso di errore di decodifica o di I/O
+            print(f"Ignorato {gradle_file} a causa di un errore: {e}")
 
         return dependency_list
 
     def analyze_pom_file(self, pom_file, dependency_list):
-        '''
-        parser = etree.XMLParser(recover=True)
-        tree = etree.parse(pom_file, parser=parser)
-        root = tree.getroot()
-        print("vedo il file pom di " + pom_file)
-
-        if root is not None:
-            # Trova tutte le dipendenze nel file pom.xml
-
-            for dependency in root.findall('.//{http://maven.apache.org/POM/4.0.0}dependency'):
-                group_id_element = dependency.find('{http://maven.apache.org/POM/4.0.0}groupId')
-                artifact_id_element = dependency.find('{http://maven.apache.org/POM/4.0.0}artifactId')
-                version_element = dependency.find('{http://maven.apache.org/POM/4.0.0}version')
-
-                # Verifica se gli elementi sono stati trovati prima di accedere al loro attributo 'text'
-                group_id = group_id_element.text if group_id_element is not None else "GroupId non trovato"
-                artifact_id = artifact_id_element.text if artifact_id_element is not None else "ArtifactId non trovato"
-                version = version_element.text if version_element is not None else "Version non trovata"
-                # print("aggiunti" + group_id + artifact_id + version)
-                self.add_dependency_in_list((group_id, artifact_id, version), dependency_list)
-                
-        '''
-        '''
-        if root is not None:
-            # Trova tutte le dipendenze nel file pom.xml
-            for dependency in root.findall('.//{*/}dependency'):
-                # Trova gli elementi groupId, artifactId e version indipendentemente dal namespace
-                group_id_element = dependency.find('.//{*/}groupId')
-                artifact_id_element = dependency.find('.//{*/}artifactId')
-                version_element = dependency.find('.//{*/}version')
-
-                # Estrai il testo dagli elementi se presenti
-                group_id = group_id_element.text.strip() if group_id_element is not None else "GroupId non trovato"
-                artifact_id = artifact_id_element.text.strip() if artifact_id_element is not None else "ArtifactId non trovato"
-                version = version_element.text.strip() if version_element is not None else "Version non trovata"
-
-                # Aggiungi la dipendenza alla lista
-                self.add_dependency_in_list((group_id, artifact_id, version), dependency_list)
-        '''
         logging.info("sto analizzando " + pom_file)
         print("vedo il file pom di " + pom_file)
-        '''
-        root = etree.parse(pom_file).getroot()
-        tree = etree.ElementTree(root)
-
-        depend = tree.xpath("//*[local-name()='dependency']")
-
-        for dep in depend:
-            infoDict = {}
-            for child in dep.getchildren():
-                tag = child.tag.split('}')[1]
-                text = child.text
-                infoDict[tag] = text
-
-            dependency_list.append((infoDict.get('groupId'), infoDict.get('artifactId'), infoDict.get('version')))
-        '''
         from lxml import etree
 
         try:
