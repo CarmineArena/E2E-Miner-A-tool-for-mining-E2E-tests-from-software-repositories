@@ -1,6 +1,5 @@
 import chardet
 
-
 class EncodingDetector:
     @staticmethod
     def detect_encoding(file_path):

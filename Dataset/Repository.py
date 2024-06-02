@@ -1,5 +1,5 @@
-from sqlalchemy import create_engine, ForeignKey, String, Integer, Boolean, Column
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import ForeignKey, String, Integer, Boolean, Column
+
 from DBconnector import Base
 from DBconnector import Session, engine
 
@@ -295,7 +295,6 @@ class WebRepositoryDAO(Base):
     is_selenium_tested_python = Column(Boolean())
     is_selenium_tested_javascript = Column(Boolean())
     is_selenium_tested_typescript = Column(Boolean())
-    # is_puppeteer_tested_java = Column(Boolean())
     is_puppeteer_tested_python = Column(Boolean())
     is_puppeteer_tested_javascript = Column(Boolean())
     is_puppeteer_tested_typescript = Column(Boolean())
@@ -323,7 +322,6 @@ class WebRepositoryDAO(Base):
         self.is_selenium_tested_python = WebRepository.is_selenium_tested_python
         self.is_selenium_tested_javascript = WebRepository.is_selenium_tested_javascript
         self.is_selenium_tested_typescript = WebRepository.is_selenium_tested_typescript
-        # self.is_puppeteer_tested_java = WebRepository.is_puppeteer_tested_java
         self.is_puppeteer_tested_python = WebRepository.is_puppeteer_tested_python
         self.is_puppeteer_tested_javascript = WebRepository.is_puppeteer_tested_javascript
         self.is_puppeteer_tested_typescript = WebRepository.is_puppeteer_tested_typescript

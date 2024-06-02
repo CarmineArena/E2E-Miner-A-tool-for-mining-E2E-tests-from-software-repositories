@@ -8,8 +8,6 @@ import subprocess
 import threading
 import re
 import time
-import git
-from lxml import etree
 from abc import ABC, abstractmethod
 import logging
 from RepositoryAnalyzer.EncodingDetector import EncodingDetector
@@ -36,16 +34,19 @@ def handle_remove_readonly(func, path, exc):
 
 
 class AnalyzerController(Analyzer, ABC):
-    def __init__(self, repository, max_threads=10, output_folder=r"C:\rep"):
+    def __init__(self, repository, max_threads=20, output_folder=r"C:\rep"):
         self.repository = repository
         self.max_threads = max_threads
         self.output_folder = output_folder
         self.repositories_queue = self.create_repositories_queue(repository)
         self.lock = threading.Lock()
         self.language_to_analyze = ['Java', 'Python', 'JavaScript', 'TypeScript']
+
+
         self.test_dependency = [SeleniumTestDependencyFinder(), PlayWrightTestDependencyFinder(),
                                 PuppeteerTestDependencyFinder(), CypressTestDependencyFinder(),
                                 LocustTestDependencyFinder(), JMeterTestDependencyFinder()]
+
 
     def create_repositories_queue(self, repositories):
         q = queue.Queue()
@@ -75,28 +76,28 @@ class AnalyzerController(Analyzer, ABC):
                 self.repositories_queue.task_done()
                 print("repository non clonata")
             else:
+                dependency_file_list = []
                 dependencies = []
                 for language in self.language_to_analyze:
                     if language in repository_to_analyze.languages or language == repository_to_analyze.main_language:
-                        repository_analyzer = DependencyFileFinderInterface.factory_finder(language)
-                        dependencies = repository_analyzer.find_dependency_file(cloned_repository, dependencies)
-                        print("dipendenze per " + repository_to_analyze.name)
-                        print(dependencies)
+                        dependency_file_list += DependencyFileFinderInterface.factory_finder(
+                            language).find_dependency_file(cloned_repository)
+                print(dependency_file_list)
+                for file in dependency_file_list:
+                    dependencies = DependencyFinderInterface.factory_analyzer(file).find_dependency(file, dependencies)
+
+                print("dipendenze per " + repository_to_analyze.name)
+                print(dependencies)
 
                 webrepository = WebRepository(repository_to_analyze.ID, repository_to_analyze.name)
 
                 # if WebAnalyzer.is_web_repository(repository_to_analyze, dependencies):
                 for language in self.language_to_analyze:
                     web_list = WebDependencyListCreator(language).trasport_file_dependencies_in_list()
-                    # fai metodo find_web_dependency che restituisce la lista di dipendenze
-                    # se la lista non è vuota aggiorna il flag e aggiungi all'oggetto
                     web_dependencies = WebAnalyzer().find_web_dependencies(web_list, dependencies)
                     if len(web_dependencies) > 0:
                         WebFlags().change_flag(language, webrepository)
                         webrepository.web_dependencies += web_dependencies
-
-                    # if WebAnalyzer().has_web_dependencies(web_list, dependencies):
-                    #     WebFlags().change_flag(language, webrepository)
 
                 if WebFlags().check_flag(webrepository):
                     print(repository_to_analyze.name + "è web")
@@ -109,17 +110,16 @@ class AnalyzerController(Analyzer, ABC):
                 with self.lock:
                     WebRepositoryDAO(webrepository).add_web_repository_to_db()
 
-                # else:
-                #     shutil.rmtree(cloned_repository, ignore_errors=False, onerror=handle_remove_readonly)
-
                 with self.lock:
                     repository_to_analyze.update_processed_repository()
 
-                shutil.rmtree(cloned_repository, ignore_errors=False, onerror=handle_remove_readonly)
+                #SE NON SONO STATI RITROVATI TOOL DI TEST E2E ELIMINA LE CARTELLE
+                if not WebFlags().check_test_flag(webrepository):
+                    shutil.rmtree(cloned_repository, ignore_errors=False, onerror=handle_remove_readonly)
 
                 self.repositories_queue.task_done()
 
-    def analyze_repositories(self): # analyze_repositories_with_thread
+    def analyze_repositories(self):  # analyze_repositories_with_thread
 
         # Definisci il comando da eseguire per disattivare core.protectNTFS
         command = ["git", "config", "--global", "core.protectNTFS", "false"]
@@ -181,6 +181,18 @@ class WebFlags:
             return True
         return False
 
+    def check_test_flag(self, webrepository):
+        if (webrepository.is_selenium_tested_java or webrepository.is_selenium_tested_typescript or
+                webrepository.is_selenium_tested_python or webrepository.is_selenium_tested_javascript or
+                webrepository.is_playwright_tested_java or webrepository.is_playwright_tested_python or
+                webrepository.is_playwright_tested_javascript or webrepository.is_playwright_tested_typescript or
+                webrepository.is_puppeteer_tested_python or webrepository.is_puppeteer_tested_javascript or
+                webrepository.is_puppeteer_tested_typescript or webrepository.is_cypress_tested_javascript or
+                webrepository.is_cypress_tested_typescript or webrepository.is_locust_tested_java or
+                webrepository.is_locust_tested_python or webrepository.is_jmeter_tested):
+            return True
+        return False
+
 
 class WebAnalyzer:
 
@@ -222,63 +234,73 @@ class DependencyFinderInterface(ABC):
 
     @staticmethod
     def factory_analyzer(dependency_file):
-        if 'pom.xml' in dependency_file or 'build.gradle' in dependency_file:
-            return JavaDependencyFinder()
+        if 'pom.xml' in dependency_file:
+            return PomDependencyFinder()
+        elif 'build.gradle' in dependency_file:
+            return GradleDependencyFinder()
         elif 'requirements' in dependency_file:
-            return PythonDependencyFinder()
+            return RequirementstxtDependencyFinder()
         elif 'package.json' in dependency_file or 'package-lock.json' in dependency_file:
             return JavaScriptDependencyFinder()
 
 
 class JavaScriptDependencyFileFinder(DependencyFileFinderInterface, ABC):
-    def find_dependency_file(self, repository, dependencies):
+    def find_dependency_file(self, repository):
+        dependency_files_list = []
         print("vedo questo ->" + str(repository))
         for root, dirs, files in os.walk(repository):
             if 'package.json' in files:
                 json_file = os.path.join(root, 'package.json')
-                analyzer = DependencyFinderInterface.factory_analyzer(json_file)
-                dependencies = analyzer.find_dependency(json_file, dependencies)
+                dependency_files_list.append(json_file)
+                # analyzer = DependencyFinderInterface.factory_analyzer(json_file)
+                # dependencies = analyzer.find_dependency(json_file, dependencies)
             if 'package-lock.json' in files:
                 json_file = os.path.join(root, 'package-lock.json')
-                analyzer = DependencyFinderInterface.factory_analyzer(json_file)
-                dependencies = analyzer.find_dependency(json_file, dependencies)
-        return dependencies
+                dependency_files_list.append(json_file)
+                # analyzer = DependencyFinderInterface.factory_analyzer(json_file)
+                # dependencies = analyzer.find_dependency(json_file, dependencies)
+        return dependency_files_list
 
 
-class PythonDependencyFileFinder(DependencyFileFinderInterface, ABC):
-    def find_dependency_file(self, repository, dependencies):
+class txtDependencyFileFinder(DependencyFileFinderInterface, ABC):
+    def find_dependency_file(self, repository):
+        dependency_files_list = []
         print("vedo questo ->" + str(repository))
         for root, dirs, files in os.walk(repository):
             for file in files:
                 if file.endswith('.txt') and file.startswith('requirements'):
                     txtfile = os.path.join(root, file)
-                    analyzer = DependencyFinderInterface.factory_analyzer(txtfile)
-                    dependencies = analyzer.find_dependency(txtfile, dependencies)
+                    dependency_files_list.append(txtfile)
+                    # analyzer = DependencyFinderInterface.factory_analyzer(txtfile)
+                    # dependencies = analyzer.find_dependency(txtfile, dependencies)
             # if 'requirements.txt' in files:
             #    txtfile = os.path.join(root, 'requirements.txt')
             #    analyzer = DependencyFinderInterface.factory_analyzer(txtfile)
             #    dependencies = analyzer.find_dependency(txtfile, dependencies)
-        return dependencies
+        return dependency_files_list
 
 
-class JavaDependencyFileFinder(DependencyFileFinderInterface, ABC):
+class MavenOrGradleDependencyFileFinder(DependencyFileFinderInterface, ABC):
 
-    def find_dependency_file(self, repository, dependencies):
+    def find_dependency_file(self, repository):
+        dependency_files_list = []
         print("vedo questo ->" + str(repository))
         for root, dirs, files in os.walk(repository):
             if 'build.gradle' in files:
                 gradle_file = os.path.join(root, 'build.gradle')
-                analyzer = DependencyFinderInterface.factory_analyzer(gradle_file)
-                dependencies = analyzer.find_dependency(gradle_file, dependencies)
+                dependency_files_list.append(gradle_file)
+                # analyzer = DependencyFinderInterface.factory_analyzer(gradle_file)
+                # dependencies = analyzer.find_dependency(gradle_file, dependencies)
                 # break  # Interrompi la ricerca se viene trovato build.gradle
 
             elif 'pom.xml' in files:
                 pom_file = os.path.join(root, 'pom.xml')
-                analyzer = DependencyFinderInterface.factory_analyzer(pom_file)
-                dependencies = analyzer.find_dependency(pom_file, dependencies)
+                dependency_files_list.append(pom_file)
+                # analyzer = DependencyFinderInterface.factory_analyzer(pom_file)
+                # dependencies = analyzer.find_dependency(pom_file, dependencies)
                 # break  # Interrompi la ricerca se viene trovato pom.xml
 
-        return dependencies
+        return dependency_files_list
 
 
 class JavaScriptDependencyFinder(DependencyFinderInterface, ABC):
@@ -289,7 +311,7 @@ class JavaScriptDependencyFinder(DependencyFinderInterface, ABC):
         # elif 'package-lock.json' in dependency_file:
         #    return self.analyze_packagelock_file(dependency_file, dependency_list)
 
-    def analyze_package_file(self, dependency_file, dependency_list): #fai bene questa cosa
+    def analyze_package_file(self, dependency_file, dependency_list):  # fai bene questa cosa
         try:
             encoding = EncodingDetector.detect_encoding(dependency_file)
             with open(dependency_file, 'r', encoding=encoding) as file:
@@ -336,7 +358,7 @@ class JavaScriptDependencyFinder(DependencyFinderInterface, ABC):
         return cleaned_package_name
 
 
-class PythonDependencyFinder(DependencyFinderInterface, ABC):
+class RequirementstxtDependencyFinder(DependencyFinderInterface, ABC):
 
     def find_dependency(self, dependency_file, dependency_list):
         print("reading... " + dependency_file)
@@ -359,35 +381,9 @@ class PythonDependencyFinder(DependencyFinderInterface, ABC):
         return dependency_list
 
 
-class JavaDependencyFinder(DependencyFinderInterface, ABC):
+class PomDependencyFinder(DependencyFinderInterface, ABC):
 
-    def find_dependency(self, dependency_file, dependency_list):
-        if 'build.gradle' in dependency_file:
-            return self.analyze_gradle_file(dependency_file, dependency_list)
-        elif 'pom.xml' in dependency_file:
-            return self.analyze_pom_file(dependency_file, dependency_list)
-
-    def analyze_gradle_file(self, gradle_file, dependency_list):
-        print("vedo il file gradle di " + gradle_file)
-        logging.info("vedo il file gradle di " + gradle_file)
-        encoding = EncodingDetector.detect_encoding(gradle_file)
-        try:
-            with open(gradle_file, 'r', encoding=encoding) as file:
-                # Cerca le dipendenze nel file Gradle
-                gradle_content = file.read()
-                pattern = re.compile(r"(['\"])(.*?):(.*?):(.*?)\1")
-                matches = pattern.findall(gradle_content)
-                print("reading " + gradle_file + "...")
-                for match in matches:
-                    group_id, artifact_id, version = match[1:]
-                    self.add_dependency_in_list((group_id, artifact_id, version), dependency_list)
-        except (UnicodeDecodeError, IOError) as e:
-            # Ignora il file in caso di errore di decodifica o di I/O
-            print(f"Ignorato {gradle_file} a causa di un errore: {e}")
-
-        return dependency_list
-
-    def analyze_pom_file(self, pom_file, dependency_list):
+    def find_dependency(self, pom_file, dependency_list):
         logging.info("sto analizzando " + pom_file)
         print("vedo il file pom di " + pom_file)
         from lxml import etree
@@ -407,7 +403,6 @@ class JavaDependencyFinder(DependencyFinderInterface, ABC):
                     text = child.text
                     infoDict[tag] = text
 
-                # dependency_list.append((infoDict.get('groupId'), infoDict.get('artifactId'), infoDict.get('version')))
                 self.add_dependency_in_list(
                     (infoDict.get('groupId'), infoDict.get('artifactId'), infoDict.get('version')), dependency_list)
 
@@ -417,3 +412,28 @@ class JavaDependencyFinder(DependencyFinderInterface, ABC):
             logging.warning("eccezione nel file " + pom_file + ": " + str(e))
             print("eccezione nel file " + pom_file + ": " + str(e))
             return dependency_list
+
+
+class GradleDependencyFinder(DependencyFinderInterface, ABC):
+
+    def find_dependency(self, gradle_file, dependency_list):
+        print("vedo il file gradle di " + gradle_file)
+        logging.info("vedo il file gradle di " + gradle_file)
+        encoding = EncodingDetector.detect_encoding(gradle_file)
+        try:
+            with open(gradle_file, 'r', encoding=encoding) as file:
+                # Cerca le dipendenze nel file Gradle
+                gradle_content = file.read()
+                pattern = re.compile(r"(['\"])(.*?):(.*?):(.*?)\1")
+                matches = pattern.findall(gradle_content)
+                print("reading " + gradle_file + "...")
+                for match in matches:
+                    group_id, artifact_id, version = match[1:]
+                    self.add_dependency_in_list((group_id, artifact_id, version), dependency_list)
+        except (UnicodeDecodeError, IOError) as e:
+            # Ignora il file in caso di errore di decodifica o di I/O
+            print(f"Ignorato {gradle_file} a causa di un errore: {e}")
+
+        return dependency_list
+
+

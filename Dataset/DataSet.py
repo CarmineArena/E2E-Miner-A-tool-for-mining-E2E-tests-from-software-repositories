@@ -20,5 +20,4 @@ class DataSet(DataSetInterface, ABC):
         return items_list
 
     def filter_repositories(self, filter_strategy):
-        # repositories = self.read_all_repositories()
         return filter_strategy.filtering()

@@ -1,8 +1,8 @@
 import json
 
 from Dataset.Repository import Repository
-
-json_file = "results.json"
+#FILE SCARICATO DAL DATASET DEL GRUPPO SEART, SPECIFICA IL NOME QUI
+json_file = "results.json" #SCARICATO DAL SITO: https://seart-ghs.si.usi.ch/
 
 try:
     with open(json_file, 'r', encoding='utf-8') as file:
@@ -13,7 +13,6 @@ except FileNotFoundError:
 
 for item in data['items']:
     languages = item["languages"]
-    # Estrai solo i nomi dei linguaggi
     language_names = [language for language in languages.keys()]
     metrics_str = json.dumps(item['metrics'])
 

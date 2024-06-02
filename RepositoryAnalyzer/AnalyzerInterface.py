@@ -1,9 +1,5 @@
 from abc import ABC, abstractmethod
 
-
-# from RepositoryAnalyzer.Analyzer import JavaDependencyFinder
-
-
 class Analyzer(ABC):
     @abstractmethod
     def analyze_all_repository(self):
@@ -12,17 +8,17 @@ class Analyzer(ABC):
 
 class DependencyFileFinderInterface(ABC):
     @abstractmethod
-    def find_dependency_file(self, repository, dependencies):
+    def find_dependency_file(self, repository):
         pass
 
     @staticmethod
     def factory_finder(language):
         if language == 'Java':
-            from RepositoryAnalyzer.Analyzer import JavaDependencyFileFinder
-            return JavaDependencyFileFinder()
+            from RepositoryAnalyzer.Analyzer import MavenOrGradleDependencyFileFinder
+            return MavenOrGradleDependencyFileFinder()
         elif language == 'Python':
-            from RepositoryAnalyzer.Analyzer import PythonDependencyFileFinder
-            return PythonDependencyFileFinder()
+            from RepositoryAnalyzer.Analyzer import txtDependencyFileFinder
+            return txtDependencyFileFinder()
         elif language == 'JavaScript':
             from RepositoryAnalyzer.Analyzer import JavaScriptDependencyFileFinder
             return JavaScriptDependencyFileFinder()

@@ -29,11 +29,10 @@ class Cloner:
         retries = 0
         while retries < self.max_retries:
             try:
-                # repo_name = repo_url.split("/")[-1].split(".")[0]
                 repo_name = repository.replace("/", "\\")
                 repo_path = os.path.join(self.output_folder, repo_name)
                 if self.is_directory_empty(repo_path):
-                    os.rmdir(repo_path)  # Remove the empty directory before cloning
+                    os.rmdir(repo_path)
                 if not os.path.exists(repo_path):
                     Repo.clone_from(repo_url, str(repo_path), depth=1)
                     logging.info('repository clonata')
